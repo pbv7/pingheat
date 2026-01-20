@@ -1,0 +1,12 @@
+
+Pinging google.com [142.250.80.46] with 32 bytes of data:
+Reply from 142.250.80.46: bytes=32 time=14ms TTL=118
+Reply from 142.250.80.46: bytes=32 time=12ms TTL=118
+Reply from 142.250.80.46: bytes=32 time=11ms TTL=118
+Request timed out.
+Reply from 142.250.80.46: bytes=32 time=15ms TTL=118
+
+Ping statistics for 142.250.80.46:
+    Packets: Sent = 5, Received = 4, Lost = 1 (20% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 11ms, Maximum = 15ms, Average = 13ms

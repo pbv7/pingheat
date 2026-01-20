@@ -1,0 +1,126 @@
+# GoReleaser configuration
+# Documentation: https://goreleaser.com
+
+version: 2
+
+before:
+  hooks:
+    # Run tests before building
+    - go test ./...
+    - go mod tidy
+
+builds:
+  - id: pingheat
+    binary: pingheat
+    main: ./cmd/pingheat
+    env:
+      - CGO_ENABLED=0
+
+    # Version info injected at build time
+    ldflags:
+      - -s -w
+      - -X github.com/pbv7/pingheat/pkg/version.Version={{.Version}}
+      - -X github.com/pbv7/pingheat/pkg/version.Commit={{.Commit}}
+      - -X github.com/pbv7/pingheat/pkg/version.BuildTime={{.Date}}
+
+    # Target platforms
+    goos:
+      - linux
+      - darwin
+      - windows
+
+    goarch:
+      - amd64
+      - arm64
+      - arm
+
+    goarm:
+      - "7"
+
+    # Skip combinations that don't make sense
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: windows
+        goarch: arm
+
+archives:
+  - id: default
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+    # Use zip for Windows, tar.gz for others
+    formats:
+      - tar.gz
+      - zip
+
+    # Include documentation files
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - 'typo'
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 'Bug Fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 'Performance'
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: pbv7
+    name: pingheat
+
+  # Create draft release for manual review before publishing
+  draft: true
+
+  # Release name
+  name_template: "{{.ProjectName}} v{{.Version}}"
+
+  # Footer for release notes
+  footer: |
+    ## Installation
+
+    ### Binary Download
+    Download the appropriate binary for your system from the assets below.
+
+    ### Homebrew (macOS/Linux)
+    ```bash
+    brew install pbv7/tap/pingheat
+    ```
+
+    ### Go Install
+    ```bash
+    go install github.com/pbv7/pingheat/cmd/pingheat@latest
+    ```
+
+    ---
+    **Full Changelog**: https://github.com/pbv7/pingheat/compare/{{ .PreviousTag }}...{{ .Tag }}

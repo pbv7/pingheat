@@ -1,0 +1,165 @@
+package app
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/pbv7/pingheat/internal/config"
+	"github.com/pbv7/pingheat/internal/exporter"
+	"github.com/pbv7/pingheat/internal/metrics"
+	"github.com/pbv7/pingheat/internal/ping"
+	"github.com/pbv7/pingheat/internal/pprof"
+	"github.com/pbv7/pingheat/internal/ui"
+)
+
+// App orchestrates all components of pingheat.
+type App struct {
+	config config.Config
+
+	// Components
+	runner   *ping.Runner
+	engine   *metrics.Engine
+	exporter *exporter.Exporter
+	pprof    *pprof.Server
+
+	// Channels
+	samples     chan ping.Sample
+	uiSamples   chan ping.Sample
+	metricsOut  chan metrics.Stats
+	errors      chan error
+}
+
+// New creates a new App instance.
+func New(cfg config.Config) *App {
+	app := &App{
+		config:     cfg,
+		runner:     ping.NewRunner(cfg.Target, cfg.Interval),
+		engine:     metrics.NewEngine(),
+		samples:    make(chan ping.Sample, 100),
+		uiSamples:  make(chan ping.Sample, 100),
+		metricsOut: make(chan metrics.Stats, 10),
+		errors:     make(chan error, 10),
+	}
+
+	if cfg.ExporterEnabled {
+		app.exporter = exporter.NewExporter(cfg.ExporterAddr, cfg.Target)
+	}
+
+	if cfg.PprofEnabled {
+		app.pprof = pprof.NewServer(cfg.PprofAddr)
+	}
+
+	return app
+}
+
+// Run starts the application.
+func (a *App) Run() error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Handle signals
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigCh
+		cancel()
+	}()
+
+	// Start pprof server if enabled
+	if a.pprof != nil {
+		go func() {
+			if err := a.pprof.Start(ctx); err != nil {
+				a.errors <- fmt.Errorf("pprof server: %w", err)
+			}
+		}()
+	}
+
+	// Start exporter if enabled
+	if a.exporter != nil {
+		go func() {
+			if err := a.exporter.Start(ctx); err != nil {
+				a.errors <- fmt.Errorf("exporter: %w", err)
+			}
+		}()
+	}
+
+	// Start ping runner
+	go func() {
+		if err := a.runner.Run(ctx, a.samples); err != nil {
+			a.errors <- fmt.Errorf("ping runner: %w", err)
+		}
+		close(a.samples)
+	}()
+
+	// Start distributor
+	go a.distribute(ctx)
+
+	// Create and run UI
+	model := ui.NewModel(a.config, a.uiSamples, a.metricsOut)
+	program := tea.NewProgram(model, tea.WithAltScreen())
+
+	// Run UI in a goroutine so we can cancel it
+	done := make(chan error, 1)
+	go func() {
+		_, err := program.Run()
+		done <- err
+		cancel()
+	}()
+
+	// Wait for completion
+	select {
+	case err := <-done:
+		return err
+	case <-ctx.Done():
+		program.Quit()
+		return nil
+	case err := <-a.errors:
+		program.Quit()
+		return err
+	}
+}
+
+// distribute fans out samples to consumers.
+func (a *App) distribute(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			close(a.uiSamples)
+			close(a.metricsOut)
+			return
+		case sample, ok := <-a.samples:
+			if !ok {
+				close(a.uiSamples)
+				close(a.metricsOut)
+				return
+			}
+
+			// Send to UI (non-blocking)
+			select {
+			case a.uiSamples <- sample:
+			default:
+				// UI buffer full, skip
+			}
+
+			// Update metrics
+			a.engine.Add(sample)
+			stats := a.engine.Stats()
+
+			// Send to metrics channel (non-blocking)
+			select {
+			case a.metricsOut <- stats:
+			default:
+				// Metrics buffer full, skip
+			}
+
+			// Update exporter if enabled
+			if a.exporter != nil {
+				a.exporter.Update(stats)
+			}
+		}
+	}
+}
