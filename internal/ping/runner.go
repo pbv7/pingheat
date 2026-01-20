@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -33,16 +35,24 @@ func NewRunner(target string, interval time.Duration) *Runner {
 // It blocks until the context is cancelled.
 func (r *Runner) Run(ctx context.Context, samples chan<- Sample) error {
 	var cmd *exec.Cmd
-	args := r.buildArgs()
+	cmdName := "ping"
+	var args []string
+	target := normalizeTarget(r.target)
 
 	if runtime.GOOS == "windows" {
 		// Windows: Use cmd.exe to set code page to 437 (US English)
 		// This ensures ping output is in English regardless of system locale
-		cmdLine := "chcp 437 >nul & ping " + strings.Join(args, " ")
-		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", cmdLine)
+		if err := validateWindowsTarget(target); err != nil {
+			return err
+		}
+		cmdLine := "chcp 437 >nul & ping -t " + quoteCmdArg(target)
+		cmdName = "cmd.exe"
+		args = []string{"/C", cmdLine}
+		cmd = exec.CommandContext(ctx, cmdName, args...)
 	} else {
 		// Linux/macOS: Force C locale for English output
-		cmd = exec.CommandContext(ctx, "ping", args...)
+		cmdName, args = r.buildCommand(target)
+		cmd = exec.CommandContext(ctx, cmdName, args...)
 		cmd.Env = append(os.Environ(), "LC_ALL=C", "LANG=C")
 	}
 
@@ -58,7 +68,7 @@ func (r *Runner) Run(ctx context.Context, samples chan<- Sample) error {
 
 	if err := cmd.Start(); err != nil {
 		// Include the full command in the error message for debugging
-		return fmt.Errorf("failed to start ping command 'ping %v': %w", args, err)
+		return fmt.Errorf("failed to start ping command '%s %v': %w", cmdName, args, err)
 	}
 
 	// Read stdout in a goroutine
@@ -107,26 +117,33 @@ func (r *Runner) Run(ctx context.Context, samples chan<- Sample) error {
 		if len(stderrBuf) > 0 {
 			return fmt.Errorf("ping command failed: %w (stderr: %s)", err, string(stderrBuf))
 		}
-		return fmt.Errorf("ping command failed with args %v: %w", args, err)
+		return fmt.Errorf("ping command failed (%s %v): %w", cmdName, args, err)
 	}
 	return nil
 }
 
-// buildArgs builds platform-specific ping arguments.
-func (r *Runner) buildArgs() []string {
+// buildCommand builds platform-specific ping command and arguments.
+func (r *Runner) buildCommand(target string) (string, []string) {
 	intervalSec := r.interval.Seconds()
 
 	switch runtime.GOOS {
 	case "darwin":
-		// macOS: ping -i interval target
-		return []string{"-i", formatFloat(intervalSec), r.target}
+		// macOS: ping6 handles IPv6 literals; ping handles IPv4/hostnames.
+		if isIPv6Literal(target) {
+			return "ping6", []string{"-i", formatFloat(intervalSec), target}
+		}
+		return "ping", []string{"-i", formatFloat(intervalSec), target}
 	case "windows":
 		// Windows: ping -t target (continuous ping)
 		// Windows doesn't support custom intervals well, so we use -t for continuous
-		return []string{"-t", r.target}
+		return "ping", []string{"-t", target}
 	default:
 		// Linux: ping -i interval target
-		return []string{"-i", formatFloat(intervalSec), r.target}
+		args := []string{"-i", formatFloat(intervalSec), target}
+		if isIPv6Literal(target) {
+			return "ping", append([]string{"-6"}, args...)
+		}
+		return "ping", args
 	}
 }
 
@@ -162,4 +179,37 @@ func formatInt(i int) string {
 		i /= 10
 	}
 	return string(buf[pos:])
+}
+
+var windowsTargetRe = regexp.MustCompile(`\A[-A-Za-z0-9._:%:]+\z`)
+
+func validateWindowsTarget(target string) error {
+	if target == "" {
+		return fmt.Errorf("target host required")
+	}
+	if !windowsTargetRe.MatchString(target) {
+		return fmt.Errorf("target contains unsupported characters for Windows ping")
+	}
+	return nil
+}
+
+func quoteCmdArg(arg string) string {
+	escaped := strings.ReplaceAll(arg, "%", "^%")
+	return `"` + escaped + `"`
+}
+
+func isIPv6Literal(target string) bool {
+	host := strings.Trim(target, "[]")
+	if zone := strings.Index(host, "%"); zone != -1 {
+		host = host[:zone]
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.To4() == nil
+}
+
+func normalizeTarget(target string) string {
+	if len(target) >= 2 && strings.HasPrefix(target, "[") && strings.HasSuffix(target, "]") {
+		return target[1 : len(target)-1]
+	}
+	return target
 }

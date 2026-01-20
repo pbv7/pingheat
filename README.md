@@ -42,10 +42,17 @@ pingheat google.com
 # Custom interval (500ms)
 pingheat -i 500ms 8.8.8.8
 
+# IPv6 literal (brackets optional)
+pingheat 2001:db8::1
+pingheat [2001:db8::1]
+
+# IPv6 link-local (interface required)
+pingheat fe80::1%en0
+
 # Enable Prometheus metrics on port 9090
 pingheat -exporter :9090 1.1.1.1
 
-# Enable pprof profiling
+# Enable pprof profiling (binds to localhost)
 pingheat -pprof :6060 google.com
 
 # All options
@@ -59,7 +66,7 @@ pingheat -i 200ms -history 50000 -exporter :9090 -pprof :6060 cloudflare.com
 | `-i`        | `1s`    | Ping interval (min: 100ms)                 |
 | `-history`  | `30000` | Number of samples to keep in history       |
 | `-exporter` | -       | Enable Prometheus exporter (e.g., `:9090`) |
-| `-pprof`    | -       | Enable pprof server (e.g., `:6060`)        |
+| `-pprof`    | -       | Enable pprof server (e.g., `:6060` binds to localhost) |
 | `-version`  | -       | Show version information                   |
 | `-help`     | -       | Show help on startup                       |
 
@@ -90,6 +97,7 @@ pingheat -i 200ms -history 50000 -exporter :9090 -pprof :6060 cloudflare.com
 ## Prometheus Metrics
 
 When enabled with `-exporter :9090`, metrics are available at `http://localhost:9090/metrics`.
+To restrict metrics to localhost, use `-exporter 127.0.0.1:9090`.
 
 ### Counters
 

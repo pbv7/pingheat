@@ -38,7 +38,7 @@ func DefaultConfig() Config {
 		ExporterEnabled:   false,
 		ExporterAddr:      ":9090",
 		PprofEnabled:      false,
-		PprofAddr:         ":6060",
+		PprofAddr:         "127.0.0.1:6060",
 		ShowHelp:          false,
 	}
 }

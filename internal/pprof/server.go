@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/pprof"
+	"time"
 )
 
 // Server provides pprof endpoints.
@@ -31,8 +32,11 @@ func (s *Server) Start(ctx context.Context) error {
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
 	s.server = &http.Server{
-		Addr:    s.addr,
-		Handler: mux,
+		Addr:              s.addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	go func() {

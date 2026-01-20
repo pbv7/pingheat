@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/pbv7/pingheat/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus"
@@ -232,8 +233,12 @@ func (e *Exporter) Start(ctx context.Context) error {
 	})
 
 	e.server = &http.Server{
-		Addr:    e.addr,
-		Handler: mux,
+		Addr:              e.addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	go func() {
