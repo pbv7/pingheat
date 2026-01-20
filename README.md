@@ -59,6 +59,8 @@ pingheat -pprof :6060 google.com
 pingheat -i 200ms -history 50000 -exporter :9090 -pprof :6060 cloudflare.com
 ```
 
+Note: IPv6 auto-detection applies to literal addresses. Hostnames that resolve to both A and AAAA may still use IPv4 unless you pass an IPv6 literal.
+
 ### Command Line Options
 
 | Flag        | Default | Description                                |
