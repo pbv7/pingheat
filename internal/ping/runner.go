@@ -17,17 +17,19 @@ import (
 
 // Runner executes ping commands and emits samples.
 type Runner struct {
-	target   string
-	interval time.Duration
-	parser   parser.Parser
+	target     string
+	interval   time.Duration
+	parser     parser.Parser
+	cmdFactory commandFactory
 }
 
 // NewRunner creates a new ping runner.
 func NewRunner(target string, interval time.Duration) *Runner {
 	return &Runner{
-		target:   target,
-		interval: interval,
-		parser:   parser.New(),
+		target:     target,
+		interval:   interval,
+		parser:     parser.New(),
+		cmdFactory: exec.CommandContext,
 	}
 }
 
@@ -35,7 +37,8 @@ func NewRunner(target string, interval time.Duration) *Runner {
 // It blocks until the context is cancelled.
 func (r *Runner) Run(ctx context.Context, samples chan<- Sample) error {
 	var cmd *exec.Cmd
-	cmdName := "ping"
+	cmdFactory := r.commandFactory()
+	var cmdName string
 	var args []string
 	target := normalizeTarget(r.target)
 
@@ -48,12 +51,15 @@ func (r *Runner) Run(ctx context.Context, samples chan<- Sample) error {
 		cmdLine := "chcp 437 >nul & ping -t " + quoteCmdArg(target)
 		cmdName = "cmd.exe"
 		args = []string{"/C", cmdLine}
-		cmd = exec.CommandContext(ctx, cmdName, args...)
+		cmd = cmdFactory(ctx, cmdName, args...)
 	} else {
 		// Linux/macOS: Force C locale for English output
 		cmdName, args = r.buildCommand(target)
-		cmd = exec.CommandContext(ctx, cmdName, args...)
-		cmd.Env = append(os.Environ(), "LC_ALL=C", "LANG=C")
+		cmd = cmdFactory(ctx, cmdName, args...)
+		if cmd.Env == nil {
+			cmd.Env = os.Environ()
+		}
+		cmd.Env = append(cmd.Env, "LC_ALL=C", "LANG=C")
 	}
 
 	stdout, err := cmd.StdoutPipe()
@@ -124,9 +130,13 @@ func (r *Runner) Run(ctx context.Context, samples chan<- Sample) error {
 
 // buildCommand builds platform-specific ping command and arguments.
 func (r *Runner) buildCommand(target string) (string, []string) {
-	intervalSec := r.interval.Seconds()
+	return buildCommandForOS(runtime.GOOS, target, r.interval)
+}
 
-	switch runtime.GOOS {
+func buildCommandForOS(goos, target string, interval time.Duration) (string, []string) {
+	intervalSec := interval.Seconds()
+
+	switch goos {
 	case "darwin":
 		// macOS: ping6 handles IPv6 literals; ping handles IPv4/hostnames.
 		if isIPv6Literal(target) {
@@ -213,3 +223,12 @@ func normalizeTarget(target string) string {
 	}
 	return target
 }
+
+func (r *Runner) commandFactory() commandFactory {
+	if r.cmdFactory != nil {
+		return r.cmdFactory
+	}
+	return exec.CommandContext
+}
+
+type commandFactory func(ctx context.Context, name string, args ...string) *exec.Cmd

@@ -199,6 +199,22 @@ func NewExporter(addr, target string) *Exporter {
 func (e *Exporter) Start(ctx context.Context) error {
 	// Register metrics
 	reg := prometheus.NewRegistry()
+	e.register(reg)
+	e.server = e.newServer(reg)
+
+	go func() {
+		<-ctx.Done()
+		e.server.Shutdown(context.Background())
+	}()
+
+	err := e.server.ListenAndServe()
+	if err == http.ErrServerClosed {
+		return nil
+	}
+	return err
+}
+
+func (e *Exporter) register(reg *prometheus.Registry) {
 	reg.MustRegister(
 		e.pingSentTotal,
 		e.pingSuccessTotal,
@@ -224,7 +240,9 @@ func (e *Exporter) Start(ctx context.Context) error {
 		e.pingUptimeSeconds,
 		e.pingUp,
 	)
+}
 
+func (e *Exporter) newServer(reg *prometheus.Registry) *http.Server {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -232,7 +250,7 @@ func (e *Exporter) Start(ctx context.Context) error {
 		w.Write([]byte("OK"))
 	})
 
-	e.server = &http.Server{
+	return &http.Server{
 		Addr:              e.addr,
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
@@ -240,17 +258,6 @@ func (e *Exporter) Start(ctx context.Context) error {
 		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
-
-	go func() {
-		<-ctx.Done()
-		e.server.Shutdown(context.Background())
-	}()
-
-	err := e.server.ListenAndServe()
-	if err == http.ErrServerClosed {
-		return nil
-	}
-	return err
 }
 
 // Update updates the exported metrics.

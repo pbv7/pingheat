@@ -16,21 +16,42 @@ import (
 	"github.com/pbv7/pingheat/internal/ui"
 )
 
+type runner interface {
+	Run(ctx context.Context, samples chan<- ping.Sample) error
+}
+
+type metricsExporter interface {
+	Start(ctx context.Context) error
+	Update(stats metrics.Stats)
+}
+
+type profiler interface {
+	Start(ctx context.Context) error
+}
+
+type program interface {
+	Run() (tea.Model, error)
+	Quit()
+}
+
+type programFactory func(tea.Model) program
+
 // App orchestrates all components of pingheat.
 type App struct {
 	config config.Config
 
 	// Components
-	runner   *ping.Runner
+	runner   runner
 	engine   *metrics.Engine
-	exporter *exporter.Exporter
-	pprof    *pprof.Server
+	exporter metricsExporter
+	pprof    profiler
+	program  programFactory
 
 	// Channels
-	samples     chan ping.Sample
-	uiSamples   chan ping.Sample
-	metricsOut  chan metrics.Stats
-	errors      chan error
+	samples    chan ping.Sample
+	uiSamples  chan ping.Sample
+	metricsOut chan metrics.Stats
+	errors     chan error
 }
 
 // New creates a new App instance.
@@ -39,6 +60,7 @@ func New(cfg config.Config) *App {
 		config:     cfg,
 		runner:     ping.NewRunner(cfg.Target, cfg.Interval),
 		engine:     metrics.NewEngine(),
+		program:    newProgram,
 		samples:    make(chan ping.Sample, 100),
 		uiSamples:  make(chan ping.Sample, 100),
 		metricsOut: make(chan metrics.Stats, 10),
@@ -56,10 +78,18 @@ func New(cfg config.Config) *App {
 	return app
 }
 
+func newProgram(model tea.Model) program {
+	return tea.NewProgram(model, tea.WithAltScreen())
+}
+
 // Run starts the application.
 func (a *App) Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	if a.program == nil {
+		a.program = newProgram
+	}
 
 	// Handle signals
 	sigCh := make(chan os.Signal, 1)
@@ -100,7 +130,7 @@ func (a *App) Run() error {
 
 	// Create and run UI
 	model := ui.NewModel(a.config, a.uiSamples, a.metricsOut)
-	program := tea.NewProgram(model, tea.WithAltScreen())
+	program := a.program(model)
 
 	// Run UI in a goroutine so we can cancel it
 	done := make(chan error, 1)
