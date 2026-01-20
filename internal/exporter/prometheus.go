@@ -214,6 +214,7 @@ func (e *Exporter) Start(ctx context.Context) error {
 	return err
 }
 
+// register adds exporter metrics to the provided registry.
 func (e *Exporter) register(reg *prometheus.Registry) {
 	reg.MustRegister(
 		e.pingSentTotal,
@@ -242,6 +243,7 @@ func (e *Exporter) register(reg *prometheus.Registry) {
 	)
 }
 
+// newServer constructs an HTTP server with metrics and health handlers.
 func (e *Exporter) newServer(reg *prometheus.Registry) *http.Server {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))

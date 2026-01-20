@@ -19,6 +19,7 @@ var (
 	errIntervalTooShort = errors.New("interval must be at least 100ms")
 )
 
+// parseResult carries the parsed config and usage handler for errors.
 type parseResult struct {
 	cfg         config.Config
 	showVersion bool
@@ -49,6 +50,7 @@ func main() {
 	}
 }
 
+// parseArgs parses CLI arguments into a config without side effects.
 func parseArgs(args []string, program string) (parseResult, error) {
 	cfg := config.DefaultConfig()
 	fs := flag.NewFlagSet(program, flag.ContinueOnError)

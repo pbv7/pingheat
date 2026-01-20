@@ -133,6 +133,7 @@ func (r *Runner) buildCommand(target string) (string, []string) {
 	return buildCommandForOS(runtime.GOOS, target, r.interval)
 }
 
+// buildCommandForOS returns the ping command and args for a specific OS.
 func buildCommandForOS(goos, target string, interval time.Duration) (string, []string) {
 	intervalSec := interval.Seconds()
 
@@ -193,6 +194,7 @@ func formatInt(i int) string {
 
 var windowsTargetRe = regexp.MustCompile(`\A[-A-Za-z0-9._:%:]+\z`)
 
+// validateWindowsTarget rejects characters that can be interpreted by cmd.exe.
 func validateWindowsTarget(target string) error {
 	if target == "" {
 		return fmt.Errorf("target host required")
@@ -203,11 +205,13 @@ func validateWindowsTarget(target string) error {
 	return nil
 }
 
+// quoteCmdArg wraps the target and escapes percent signs for cmd.exe.
 func quoteCmdArg(arg string) string {
 	escaped := strings.ReplaceAll(arg, "%", "^%")
 	return `"` + escaped + `"`
 }
 
+// isIPv6Literal reports whether the target is an IPv6 literal (with optional zone).
 func isIPv6Literal(target string) bool {
 	host := strings.Trim(target, "[]")
 	if zone := strings.Index(host, "%"); zone != -1 {
@@ -217,6 +221,7 @@ func isIPv6Literal(target string) bool {
 	return ip != nil && ip.To4() == nil
 }
 
+// normalizeTarget removes bracket wrapping from IPv6 literals.
 func normalizeTarget(target string) string {
 	if len(target) >= 2 && strings.HasPrefix(target, "[") && strings.HasSuffix(target, "]") {
 		return target[1 : len(target)-1]
@@ -224,6 +229,7 @@ func normalizeTarget(target string) string {
 	return target
 }
 
+// commandFactory returns the configured command factory or the default.
 func (r *Runner) commandFactory() commandFactory {
 	if r.cmdFactory != nil {
 		return r.cmdFactory
@@ -231,4 +237,5 @@ func (r *Runner) commandFactory() commandFactory {
 	return exec.CommandContext
 }
 
+// commandFactory constructs an exec.Cmd for testing.
 type commandFactory func(ctx context.Context, name string, args ...string) *exec.Cmd

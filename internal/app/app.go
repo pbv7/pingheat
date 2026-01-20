@@ -16,24 +16,29 @@ import (
 	"github.com/pbv7/pingheat/internal/ui"
 )
 
+// runner emits ping samples until the context is cancelled.
 type runner interface {
 	Run(ctx context.Context, samples chan<- ping.Sample) error
 }
 
+// metricsExporter publishes metrics updates and serves them over HTTP.
 type metricsExporter interface {
 	Start(ctx context.Context) error
 	Update(stats metrics.Stats)
 }
 
+// profiler exposes runtime profiling endpoints.
 type profiler interface {
 	Start(ctx context.Context) error
 }
 
+// program is the minimal Bubble Tea interface used by the app.
 type program interface {
 	Run() (tea.Model, error)
 	Quit()
 }
 
+// programFactory builds a UI program from a model.
 type programFactory func(tea.Model) program
 
 // App orchestrates all components of pingheat.
@@ -78,6 +83,7 @@ func New(cfg config.Config) *App {
 	return app
 }
 
+// newProgram creates the default Bubble Tea program.
 func newProgram(model tea.Model) program {
 	return tea.NewProgram(model, tea.WithAltScreen())
 }

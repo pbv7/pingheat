@@ -36,6 +36,7 @@ func (s *Server) Start(ctx context.Context) error {
 	return err
 }
 
+// newServer builds the pprof HTTP server and handlers.
 func (s *Server) newServer() *http.Server {
 	mux := http.NewServeMux()
 
