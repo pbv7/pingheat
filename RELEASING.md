@@ -49,6 +49,7 @@ git push origin v1.0.0
 ### 3. Automated Release
 
 GitHub Actions will automatically:
+
 - Run tests
 - Build binaries for all platforms
 - Create checksums
@@ -57,7 +58,7 @@ GitHub Actions will automatically:
 
 ### 4. Review and Publish
 
-1. Go to https://github.com/pbv7/pingheat/releases
+1. Go to <https://github.com/pbv7/pingheat/releases>
 2. Find the draft release
 3. Review the generated changelog and artifacts
 4. Edit release notes if needed
@@ -130,6 +131,7 @@ make release-snapshot
 ### Missing GITHUB_TOKEN
 
 For manual releases, create a personal access token at:
-https://github.com/settings/tokens
+
+<https://github.com/settings/tokens>
 
 Required scopes: `repo` (full control of private repositories)

@@ -54,38 +54,38 @@ pingheat -i 200ms -history 50000 -exporter :9090 -pprof :6060 cloudflare.com
 
 ### Command Line Options
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-i` | `1s` | Ping interval (min: 100ms) |
-| `-history` | `30000` | Number of samples to keep in history |
-| `-exporter` | - | Enable Prometheus exporter (e.g., `:9090`) |
-| `-pprof` | - | Enable pprof server (e.g., `:6060`) |
-| `-version` | - | Show version information |
-| `-help` | - | Show help on startup |
+| Flag        | Default | Description                                |
+| ----------- | ------- | ------------------------------------------ |
+| `-i`        | `1s`    | Ping interval (min: 100ms)                 |
+| `-history`  | `30000` | Number of samples to keep in history       |
+| `-exporter` | -       | Enable Prometheus exporter (e.g., `:9090`) |
+| `-pprof`    | -       | Enable pprof server (e.g., `:6060`)        |
+| `-version`  | -       | Show version information                   |
+| `-help`     | -       | Show help on startup                       |
 
 ## Keyboard Controls
 
-| Key | Action |
-|-----|--------|
-| `↑` / `k` | Scroll up (older) |
-| `↓` / `j` | Scroll down (newer) |
-| `PgUp` / `PgDn` | Page up / down |
-| `Home` / `g` | Jump to oldest |
-| `End` / `G` | Jump to newest |
-| `?` / `h` | Toggle help |
-| `c` | Clear history |
-| `q` / `Ctrl+C` | Quit |
+| Key             | Action                |
+| --------------- | --------------------- |
+| `↑` / `k`       | Scroll up (older)     |
+| `↓` / `j`       | Scroll down (newer)   |
+| `PgUp` / `PgDn` | Page up / down        |
+| `Home` / `g`    | Jump to oldest        |
+| `End` / `G`     | Jump to newest        |
+| `?` / `h`       | Toggle help           |
+| `c`             | Clear history         |
+| `q` / `Ctrl+C`  | Quit                  |
 
 ## Color Legend
 
-| RTT | Color | Classification |
-|-----|-------|----------------|
-| 0-30ms | <span style="color:#00FF00">█████</span> `#00FF00` Green | Excellent |
-| 30-80ms | <span style="color:#7FFF00">█████</span> `#7FFF00` Light Green | Good |
-| 80-150ms | <span style="color:#FFFF00">█████</span> `#FFFF00` Yellow | Fair |
-| 150-300ms | <span style="color:#FF8C00">█████</span> `#FF8C00` Orange | Poor |
-| >300ms | <span style="color:#FF0000">█████</span> `#FF0000` Red | Bad |
-| Timeout | <span style="color:#8B008B">█████</span> `#8B008B` Magenta | No response |
+| RTT       | Color (hex) | Classification |
+| --------- | ----------- | -------------- |
+| 0-30ms    | `#00FF00`   | Excellent      |
+| 30-80ms   | `#7FFF00`   | Good           |
+| 80-150ms  | `#FFFF00`   | Fair           |
+| 150-300ms | `#FF8C00`   | Poor           |
+| >300ms    | `#FF0000`   | Bad            |
+| Timeout   | `#8B008B`   | No response    |
 
 ## Prometheus Metrics
 
@@ -152,17 +152,17 @@ make release-snapshot
 
 ## Platform Support
 
-| Platform | Tested | Notes |
-|----------|--------|-------|
-| Linux (amd64, arm64, armv7) | Yes | Full support |
-| macOS (Intel, Apple Silicon) | Yes | Full support |
-| Windows (amd64, arm64) | Yes | Uses `-t` flag (no interval control) |
+| Platform                     | Tested | Notes                                |
+| ---------------------------- | ------ | ------------------------------------ |
+| Linux (amd64, arm64, armv7)  | Yes    | Full support                         |
+| macOS (Intel, Apple Silicon) | Yes    | Full support                         |
+| Windows (amd64, arm64)       | Yes    | Uses `-t` flag (no interval control) |
 
 All platforms automatically force English locale for consistent output parsing.
 
 ## Architecture
 
-```
+```text
 ┌──────────────┐
 │ Ping Runner  │ executes system ping command
 └──────┬───────┘
