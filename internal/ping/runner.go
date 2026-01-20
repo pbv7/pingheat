@@ -48,7 +48,7 @@ func (r *Runner) Run(ctx context.Context, samples chan<- Sample) error {
 		if err := validateWindowsTarget(target); err != nil {
 			return err
 		}
-		cmdLine := "chcp 437 >nul & ping -t " + quoteCmdArg(target)
+		cmdLine := "chcp 437 >nul & ping -t " + escapeCmdArg(target)
 		cmdName = "cmd.exe"
 		args = []string{"/C", cmdLine}
 		cmd = cmdFactory(ctx, cmdName, args...)
@@ -205,10 +205,9 @@ func validateWindowsTarget(target string) error {
 	return nil
 }
 
-// quoteCmdArg wraps the target and escapes percent signs for cmd.exe.
-func quoteCmdArg(arg string) string {
-	escaped := strings.ReplaceAll(arg, "%", "^%")
-	return `"` + escaped + `"`
+// escapeCmdArg escapes percent signs to avoid cmd.exe expansion.
+func escapeCmdArg(arg string) string {
+	return strings.ReplaceAll(arg, "%", "^%")
 }
 
 // isIPv6Literal reports whether the target is an IPv6 literal (with optional zone).
