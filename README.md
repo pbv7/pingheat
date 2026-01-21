@@ -28,7 +28,10 @@ A cross-platform terminal application that visualizes network latency as a real-
 
 - golangci-lint - `brew install golangci-lint` or [install guide](https://golangci-lint.run/usage/install/)
 - Node.js/npx - For markdown linting (`make lint-md`)
-- GoReleaser - For building releases (`brew install goreleaser`)
+- actionlint - `brew install actionlint` or [install guide](https://github.com/rhysd/actionlint)
+- yamllint - `brew install yamllint` or `pip install yamllint`
+- GoReleaser - `brew install goreleaser` or [install guide](https://goreleaser.com/install/)
+- gh - GitHub CLI for creating PRs (`brew install gh` or [cli.github.com](https://cli.github.com))
 
 ## Installation
 

@@ -18,6 +18,7 @@ It optionally exports Prometheus metrics and targets Go 1.25+ on Linux, macOS, a
 - **actionlint** - GitHub Actions workflow validation (installable via brew, go install, or npx)
 - **yamllint** - YAML syntax validation (installable via brew or pip)
 - **GoReleaser** - Release binary building (installable via brew or from goreleaser.com)
+- **gh** - GitHub CLI for creating PRs from terminal (`brew install gh` or from cli.github.com)
 
 ## Build & Development Commands
 
@@ -52,6 +53,113 @@ make release                 # Create actual release (requires git tag)
 make clean                   # Remove bin/ and coverage files
 make clean-dist              # Remove dist/ (GoReleaser output)
 make clean-all               # Remove everything (clean + clean-dist)
+```
+
+## Development Workflow
+
+**IMPORTANT**: The `main` branch is protected. All changes must go through pull requests.
+
+### Making Changes
+
+1. **Create a feature branch**:
+
+   ```bash
+   git checkout main
+   git pull
+   git checkout -b feature/my-feature  # or fix/, chore/, docs/, etc.
+   ```
+
+2. **Make your changes and commit**:
+
+   ```bash
+   # Make changes to files
+   git add .
+   git commit -m "feat: add awesome feature"
+   ```
+
+3. **Push the branch**:
+
+   ```bash
+   git push -u origin feature/my-feature
+   ```
+
+4. **Create a pull request**:
+
+   **Option A: Via GitHub web UI**
+   - GitHub will show a banner with "Compare & pull request" button
+   - Or go to: https://github.com/pbv7/pingheat/pulls → "New pull request"
+
+   **Option B: Via GitHub CLI** (recommended):
+   ```bash
+   gh pr create --title "feat: add awesome feature" --body "Description of changes"
+
+   # Or interactive mode:
+   gh pr create
+   ```
+
+5. **Wait for CI checks**:
+   - All 6 status checks must pass:
+     - Test (ubuntu-latest, macos-latest, windows-latest)
+     - Lint
+     - Security Scan
+     - Build Verification
+   - Codecov will comment with coverage report
+   - Dependency Review will scan for vulnerabilities
+
+6. **Merge the PR**:
+   ```bash
+   # Via GitHub CLI (after checks pass):
+   gh pr merge --squash --delete-branch
+
+   # Or use the "Squash and merge" button on GitHub web UI
+   ```
+
+7. **Update local main**:
+   ```bash
+   git checkout main
+   git pull
+   ```
+
+### Common Workflows
+
+**Updating dependencies**:
+```bash
+git checkout -b chore/update-dependencies
+go get -u ./...
+go mod tidy
+make test        # Verify everything works
+make build       # Verify build succeeds
+git add go.mod go.sum
+git commit -m "chore: update dependencies to latest versions"
+git push -u origin chore/update-dependencies
+gh pr create --title "chore: update dependencies" --body "Updated all dependencies to latest versions"
+```
+
+**Quick fix**:
+```bash
+git checkout -b fix/typo-in-readme
+# Fix the typo
+git add README.md
+git commit -m "docs: fix typo in installation instructions"
+git push -u origin fix/typo-in-readme
+gh pr create
+```
+
+### Branch Protection Rules
+
+The `main` branch has these protections:
+- ❌ Direct pushes blocked
+- ❌ Force pushes blocked
+- ✅ Requires pull request
+- ✅ Requires all CI checks to pass
+- ✅ Requires branch to be up-to-date
+- ✅ Linear history enforced
+
+**If you try to push directly to main**:
+```bash
+git push origin main
+# Error: GH006: Protected branch update failed
+# Error: Changes must be made through a pull request
 ```
 
 ## Architecture
