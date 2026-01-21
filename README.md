@@ -218,20 +218,20 @@ All platforms automatically force English locale for consistent output parsing.
 ## Architecture
 
 ```text
-┌──────────────┐
-│ Ping Runner  │ executes system ping command
-└──────┬───────┘
-       │ samples
-┌──────▼───────┐
-│ Distributor  │ broadcasts to consumers
-└──────┬───────┘
-       │
-   ┌───┴───┬─────────────┐
-   │       │             │
-┌──▼──┐ ┌──▼───┐ ┌───────▼───────┐
-│ UI  │ │Metrics│ │Prometheus     │
-│     │ │Engine │ │Exporter (opt) │
-└─────┘ └──────┘ └───────────────┘
+    ┌──────────────┐
+    │ Ping Runner  │ executes system ping command
+    └──────┬───────┘
+           │ samples
+    ┌──────▼───────┐
+    │ Distributor  │ broadcasts to consumers
+    └──────┬───────┘
+           │
+     ┌─────┴─────┬───────────────┐
+     │           │               │
+┌────▼────┐ ┌────▼────┐ ┌────────▼────────┐
+│   UI    │ │ Metrics │ │   Prometheus    │
+│         │ │ Engine  │ │  Exporter (opt) │
+└─────────┘ └─────────┘ └─────────────────┘
 ```
 
 ## License
@@ -241,4 +241,3 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Contributing
 
 Contributions welcome! Please open an issue or submit a pull request.
-test

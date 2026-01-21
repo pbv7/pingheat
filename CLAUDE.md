@@ -86,10 +86,12 @@ make clean-all               # Remove everything (clean + clean-dist)
 4. **Create a pull request**:
 
    **Option A: Via GitHub web UI**
+
    - GitHub will show a banner with "Compare & pull request" button
-   - Or go to: https://github.com/pbv7/pingheat/pulls → "New pull request"
+   - Or go to: <https://github.com/pbv7/pingheat/pulls> → "New pull request"
 
    **Option B: Via GitHub CLI** (recommended):
+
    ```bash
    gh pr create --title "feat: add awesome feature" --body "Description of changes"
 
@@ -107,6 +109,7 @@ make clean-all               # Remove everything (clean + clean-dist)
    - Dependency Review will scan for vulnerabilities
 
 6. **Merge the PR**:
+
    ```bash
    # Via GitHub CLI (after checks pass):
    gh pr merge --squash --delete-branch
@@ -115,6 +118,7 @@ make clean-all               # Remove everything (clean + clean-dist)
    ```
 
 7. **Update local main**:
+
    ```bash
    git checkout main
    git pull
@@ -123,6 +127,7 @@ make clean-all               # Remove everything (clean + clean-dist)
 ### Common Workflows
 
 **Updating dependencies**:
+
 ```bash
 git checkout -b chore/update-dependencies
 go get -u ./...
@@ -136,6 +141,7 @@ gh pr create --title "chore: update dependencies" --body "Updated all dependenci
 ```
 
 **Quick fix**:
+
 ```bash
 git checkout -b fix/typo-in-readme
 # Fix the typo
@@ -148,6 +154,7 @@ gh pr create
 ### Branch Protection Rules
 
 The `main` branch has these protections:
+
 - ❌ Direct pushes blocked
 - ❌ Force pushes blocked
 - ✅ Requires pull request
@@ -156,6 +163,7 @@ The `main` branch has these protections:
 - ✅ Linear history enforced
 
 **If you try to push directly to main**:
+
 ```bash
 git push origin main
 # Error: GH006: Protected branch update failed
