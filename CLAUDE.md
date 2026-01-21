@@ -210,7 +210,7 @@ GitHub Actions workflows automate testing, linting, security scanning, and relea
 
 ### Test Workflow Jobs (`test.yml`)
 
-- **test**: Runs `go test -race` on Linux, macOS, and Windows with coverage upload
+- **test**: Runs `go test -race` on Linux, macOS, and Windows
 - **lint**: golangci-lint + markdownlint
 - **security**: govulncheck for vulnerability scanning
 - **build**: Cross-compilation verification for all platforms
@@ -228,8 +228,7 @@ All pre-release jobs must pass before GoReleaser runs.
 
 ### Required Secrets
 
-- `GITHUB_TOKEN`: Automatically provided by GitHub Actions
-- `CODECOV_TOKEN`: Optional, for coverage uploads to Codecov
+- `GITHUB_TOKEN`: Automatically provided by GitHub Actions (no configuration needed)
 
 ## Common Gotchas
 
