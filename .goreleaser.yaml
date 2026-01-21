@@ -124,3 +124,21 @@ release:
 
     ---
     **Full Changelog**: https://github.com/pbv7/pingheat/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+brews:
+  - name: pingheat
+    repository:
+      owner: pbv7
+      name: homebrew-tap
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    homepage: https://github.com/pbv7/pingheat
+    description: "Network latency heatmap visualizer"
+    license: MIT
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    directory: Formula
+    install: |
+      bin.install "pingheat"
+    test: |
+      system "#{bin}/pingheat", "--version"
