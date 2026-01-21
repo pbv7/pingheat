@@ -6,7 +6,6 @@ import "sync"
 type RingBuffer[T any] struct {
 	mu       sync.RWMutex
 	data     []T
-	size     int
 	head     int // next write position
 	count    int // number of elements
 	capacity int

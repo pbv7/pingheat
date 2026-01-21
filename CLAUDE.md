@@ -11,7 +11,13 @@ It optionally exports Prometheus metrics and targets Go 1.25+ on Linux, macOS, a
 
 **Required:** Go 1.25+, Git
 
-**Optional:** golangci-lint (Go linting), Node.js/npx (markdown linting), GoReleaser (releases)
+**Optional:**
+
+- **golangci-lint** - Go code linting (installable via brew, go install, or npx)
+- **Node.js/npx** - Markdown linting via markdownlint-cli2
+- **actionlint** - GitHub Actions workflow validation (installable via brew, go install, or npx)
+- **yamllint** - YAML syntax validation (installable via brew or pip)
+- **GoReleaser** - Release binary building (installable via brew or from goreleaser.com)
 
 ## Build & Development Commands
 
@@ -33,7 +39,8 @@ make cover-summary           # Print coverage percentage
 # Linting & Dependencies
 make lint                    # Run golangci-lint on Go code
 make lint-md                 # Lint markdown files
-make lint-all                # Run all linters (Go + markdown)
+make lint-workflows          # Lint GitHub Actions workflows (requires actionlint)
+make lint-all                # Run all linters (Go + markdown + workflows)
 make deps                    # Download and tidy modules
 
 # Release (requires goreleaser installed)
@@ -178,10 +185,51 @@ Always validate code quality before committing:
 ```bash
 make test          # Run tests with race detector
 make cover-summary # Check coverage (aim for >60%)
-make lint-all      # Lint both Go code and markdown files
+make lint-all      # Lint Go code, markdown files, and workflows
 ```
 
 **Critical:** Always run `make lint-md` before committing markdown changes. Formatting errors break documentation rendering on GitHub.
+
+**Workflow validation (if modifying .github/workflows/):**
+
+```bash
+make lint-workflows  # Validates GitHub Actions workflows with actionlint
+```
+
+## CI/CD Pipelines
+
+GitHub Actions workflows automate testing, linting, security scanning, and releases.
+
+### Workflows
+
+| Workflow | Trigger | Purpose |
+| -------- | ------- | ------- |
+| `test.yml` | Push to main, PRs | Multi-platform tests, linting, security scan, build verification |
+| `dependency-review.yml` | PRs only | Scan dependencies for vulnerabilities before merge |
+| `release.yml` | Tag push (v*) | Pre-release checks + GoReleaser for binary distribution |
+
+### Test Workflow Jobs (`test.yml`)
+
+- **test**: Runs `go test -race` on Linux, macOS, and Windows with coverage upload
+- **lint**: golangci-lint + markdownlint
+- **security**: govulncheck for vulnerability scanning
+- **build**: Cross-compilation verification for all platforms
+
+### Release Workflow (`release.yml`)
+
+The release workflow runs pre-release checks before GoReleaser:
+
+1. Multi-platform tests (Linux, macOS, Windows)
+2. Linting with golangci-lint
+3. Security scan with govulncheck
+4. GoReleaser builds and publishes binaries
+
+All pre-release jobs must pass before GoReleaser runs.
+
+### Required Secrets
+
+- `GITHUB_TOKEN`: Automatically provided by GitHub Actions
+- `CODECOV_TOKEN`: Optional, for coverage uploads to Codecov
 
 ## Common Gotchas
 

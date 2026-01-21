@@ -211,15 +211,15 @@ func TestHelperProcess(t *testing.T) {
 	}
 
 	if stdout := os.Getenv("PINGHELPER_STDOUT"); stdout != "" {
-		fmt.Fprint(os.Stdout, stdout)
+		_, _ = fmt.Fprint(os.Stdout, stdout)
 	}
 	if stderr := os.Getenv("PINGHELPER_STDERR"); stderr != "" {
-		fmt.Fprint(os.Stderr, stderr)
+		_, _ = fmt.Fprint(os.Stderr, stderr)
 	}
 
 	exitCode := 0
 	if raw := os.Getenv("PINGHELPER_EXIT"); raw != "" {
-		fmt.Sscanf(raw, "%d", &exitCode)
+		_, _ = fmt.Sscanf(raw, "%d", &exitCode)
 	}
 	os.Exit(exitCode)
 }

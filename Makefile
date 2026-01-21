@@ -4,7 +4,7 @@ BUILD_TIME := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 LDFLAGS := -ldflags "-s -w -X github.com/pbv7/pingheat/pkg/version.Version=$(VERSION) -X github.com/pbv7/pingheat/pkg/version.Commit=$(COMMIT) -X github.com/pbv7/pingheat/pkg/version.BuildTime=$(BUILD_TIME)"
 
-.PHONY: all build clean clean-dist clean-all test test-cover cover-summary lint lint-md lint-all run install release release-snapshot release-check
+.PHONY: all build clean clean-dist clean-all test test-cover cover-summary lint lint-md lint-workflows lint-all run install release release-snapshot release-check
 
 all: build
 
@@ -37,7 +37,11 @@ lint:
 lint-md:
 	npx --yes markdownlint-cli2 "*.md" "**/*.md" "!node_modules" "!dist"
 
-lint-all: lint lint-md
+lint-workflows:
+	@command -v actionlint >/dev/null 2>&1 || { echo "actionlint not found. Install with: brew install actionlint"; exit 1; }
+	actionlint .github/workflows/*.yml
+
+lint-all: lint lint-md lint-workflows
 
 clean:
 	rm -rf bin/ coverage.out coverage.html

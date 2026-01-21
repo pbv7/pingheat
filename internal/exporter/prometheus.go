@@ -204,7 +204,7 @@ func (e *Exporter) Start(ctx context.Context) error {
 
 	go func() {
 		<-ctx.Done()
-		e.server.Shutdown(context.Background())
+		_ = e.server.Shutdown(context.Background())
 	}()
 
 	err := e.server.ListenAndServe()
@@ -249,7 +249,7 @@ func (e *Exporter) newServer(reg *prometheus.Registry) *http.Server {
 	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	})
 
 	return &http.Server{
