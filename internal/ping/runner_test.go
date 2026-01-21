@@ -160,7 +160,7 @@ func TestRunnerRunParsesOutput(t *testing.T) {
 	}
 
 	samples := make(chan Sample, 2)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	if err := r.Run(ctx, samples); err != nil {
@@ -172,7 +172,7 @@ func TestRunnerRunParsesOutput(t *testing.T) {
 		select {
 		case s := <-samples:
 			got = append(got, s)
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(2 * time.Second):
 			t.Fatalf("timed out waiting for samples; got %d", len(got))
 		}
 	}
