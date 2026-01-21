@@ -77,13 +77,22 @@ make clean-all               # Remove everything (clean + clean-dist)
    git commit -m "feat: add awesome feature"
    ```
 
-3. **Push the branch**:
+3. **Validate changes BEFORE pushing**:
+
+   ```bash
+   make test         # Run tests with race detector
+   make lint-all     # Run all linters (Go + markdown + workflows)
+   ```
+
+   **CRITICAL**: Always run `make lint-all` before creating a PR. This catches issues locally that CI will check anyway.
+
+4. **Push the branch**:
 
    ```bash
    git push -u origin feature/my-feature
    ```
 
-4. **Create a pull request**:
+5. **Create a pull request**:
 
    **Option A: Via GitHub web UI**
 
@@ -99,7 +108,7 @@ make clean-all               # Remove everything (clean + clean-dist)
    gh pr create
    ```
 
-5. **Wait for CI checks**:
+6. **Wait for CI checks**:
    - All 6 status checks must pass:
      - Test (ubuntu-latest, macos-latest, windows-latest)
      - Lint
@@ -108,7 +117,7 @@ make clean-all               # Remove everything (clean + clean-dist)
    - Codecov will comment with coverage report
    - Dependency Review will scan for vulnerabilities
 
-6. **Merge the PR**:
+7. **Merge the PR**:
 
    ```bash
    # Via GitHub CLI (after checks pass):
@@ -117,7 +126,7 @@ make clean-all               # Remove everything (clean + clean-dist)
    # Or use the "Squash and merge" button on GitHub web UI
    ```
 
-7. **Update local main**:
+8. **Update local main**:
 
    ```bash
    git checkout main
@@ -133,7 +142,7 @@ git checkout -b chore/update-dependencies
 go get -u ./...
 go mod tidy
 make test        # Verify everything works
-make build       # Verify build succeeds
+make lint-all    # Run all linters
 git add go.mod go.sum
 git commit -m "chore: update dependencies to latest versions"
 git push -u origin chore/update-dependencies
@@ -145,6 +154,7 @@ gh pr create --title "chore: update dependencies" --body "Updated all dependenci
 ```bash
 git checkout -b fix/typo-in-readme
 # Fix the typo
+make lint-all    # Validate changes
 git add README.md
 git commit -m "docs: fix typo in installation instructions"
 git push -u origin fix/typo-in-readme
