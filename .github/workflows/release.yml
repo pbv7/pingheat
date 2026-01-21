@@ -56,7 +56,7 @@ jobs:
         with:
           version: latest
           args: --timeout=5m
-          install-mode: binary
+          install-mode: goinstall
 
   security:
     name: Pre-release Security Scan
