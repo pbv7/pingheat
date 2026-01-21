@@ -117,16 +117,25 @@ make clean-all               # Remove everything (clean + clean-dist)
    - Codecov will comment with coverage report
    - Dependency Review will scan for vulnerabilities
 
-7. **Merge the PR**:
+7. **Approve the PR** (required for solo dev workflow):
 
    ```bash
-   # Via GitHub CLI (after checks pass):
+   # Via GitHub CLI:
+   gh pr review --approve
+
+   # Or click "Review changes" → "Approve" → "Submit review" on GitHub web UI
+   ```
+
+8. **Merge the PR**:
+
+   ```bash
+   # Via GitHub CLI (after checks pass and approval):
    gh pr merge --squash --delete-branch
 
    # Or use the "Squash and merge" button on GitHub web UI
    ```
 
-8. **Update local main**:
+9. **Update local main**:
 
    ```bash
    git checkout main
@@ -147,6 +156,14 @@ git add go.mod go.sum
 git commit -m "chore: update dependencies to latest versions"
 git push -u origin chore/update-dependencies
 gh pr create --title "chore: update dependencies" --body "Updated all dependencies to latest versions"
+
+# After CI passes:
+gh pr review --approve
+gh pr merge --squash --delete-branch
+
+# Update local main
+git checkout main
+git pull
 ```
 
 **Quick fix**:
@@ -159,6 +176,11 @@ git add README.md
 git commit -m "docs: fix typo in installation instructions"
 git push -u origin fix/typo-in-readme
 gh pr create
+
+# After CI passes:
+gh pr review --approve
+gh pr merge --squash --delete-branch
+git checkout main && git pull
 ```
 
 ### Branch Protection Rules
