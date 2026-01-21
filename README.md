@@ -31,6 +31,28 @@ A cross-platform terminal application that visualizes network latency as a real-
 
 ## Installation
 
+### Homebrew (macOS/Linux)
+
+```bash
+brew install pbv7/tap/pingheat
+```
+
+### Binary Releases
+
+Download pre-built binaries for your platform from the [releases page](https://github.com/pbv7/pingheat/releases).
+
+Available for:
+
+- Linux (amd64, arm64, armv7)
+- macOS (Intel & Apple Silicon)
+- Windows (amd64, arm64)
+
+### Go Install
+
+```bash
+go install github.com/pbv7/pingheat/cmd/pingheat@latest
+```
+
 ### From Source
 
 ```bash
@@ -38,12 +60,6 @@ git clone https://github.com/pbv7/pingheat.git
 cd pingheat
 make build
 ./bin/pingheat google.com
-```
-
-### Go Install
-
-```bash
-go install github.com/pbv7/pingheat/cmd/pingheat@latest
 ```
 
 ## Usage
