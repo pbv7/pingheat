@@ -223,7 +223,8 @@ GitHub Actions workflows automate testing, linting, security scanning, and relea
 
 ### Test Workflow Jobs (`test.yml`)
 
-- **test**: Runs `go test -race` on Linux, macOS, and Windows
+- **test**: Runs `go test -race -coverprofile=coverage.txt` on Linux, macOS, and Windows
+  - Uploads coverage reports to Codecov (ubuntu-latest only)
 - **lint**: golangci-lint + markdownlint
 - **security**: govulncheck for vulnerability scanning
 - **build**: Cross-compilation verification for all platforms
@@ -242,6 +243,11 @@ All pre-release jobs must pass before GoReleaser runs.
 ### Required Secrets
 
 - `GITHUB_TOKEN`: Automatically provided by GitHub Actions (no configuration needed)
+- `CODECOV_TOKEN`: Required for uploading coverage reports to Codecov
+  - Obtain from [codecov.io](https://app.codecov.io/gh/pbv7/pingheat/settings)
+  - Add as repository secret in GitHub Settings > Secrets and variables > Actions
+- `HOMEBREW_TAP_TOKEN`: Fine-grained PAT for updating Homebrew tap (release workflow only)
+  - Required permissions: Contents (read/write) on `pbv7/homebrew-tap`
 
 ## Common Gotchas
 

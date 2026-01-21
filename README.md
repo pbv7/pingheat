@@ -5,6 +5,7 @@ A cross-platform terminal application that visualizes network latency as a real-
 ![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)
 ![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
+[![codecov](https://codecov.io/gh/pbv7/pingheat/branch/main/graph/badge.svg)](https://codecov.io/gh/pbv7/pingheat)
 
 ## Features
 
