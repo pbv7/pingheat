@@ -16,6 +16,19 @@ A cross-platform terminal application that visualizes network latency as a real-
 - **Large History** - Stores up to 30,000 samples for scrollable review
 - **Keyboard Navigation** - Vim-style controls for browsing history
 
+## Development Prerequisites
+
+**Required:**
+
+- Go 1.25+ - [https://go.dev/dl/](https://go.dev/dl/)
+- Git
+
+**Optional (for development):**
+
+- golangci-lint - `brew install golangci-lint` or [install guide](https://golangci-lint.run/usage/install/)
+- Node.js/npx - For markdown linting (`make lint-md`)
+- GoReleaser - For building releases (`brew install goreleaser`)
+
 ## Installation
 
 ### From Source
@@ -52,25 +65,30 @@ pingheat fe80::1%en0
 # Enable Prometheus metrics on port 9090
 pingheat -exporter :9090 1.1.1.1
 
-# Enable pprof profiling (binds to localhost)
+# Enable pprof profiling (automatically binds to localhost for security)
 pingheat -pprof :6060 google.com
 
 # All options
 pingheat -i 200ms -history 50000 -exporter :9090 -pprof :6060 cloudflare.com
 ```
 
-Note: IPv6 auto-detection applies to literal addresses. Hostnames that resolve to both A and AAAA may still use IPv4 unless you pass an IPv6 literal.
+**Security Notes:**
+
+- pprof: Using `:6060` automatically binds to `127.0.0.1:6060` (localhost only) to prevent
+  exposing debugging endpoints. To bind to all interfaces, explicitly use `0.0.0.0:6060`.
+- IPv6: Auto-detection applies to literal addresses only. Hostnames that resolve to both
+  A and AAAA records may still use IPv4 unless you pass an IPv6 literal.
 
 ### Command Line Options
 
-| Flag        | Default | Description                                |
-| ----------- | ------- | ------------------------------------------ |
-| `-i`        | `1s`    | Ping interval (min: 100ms)                 |
-| `-history`  | `30000` | Number of samples to keep in history       |
-| `-exporter` | -       | Enable Prometheus exporter (e.g., `:9090`) |
-| `-pprof`    | -       | Enable pprof server (e.g., `:6060` binds to localhost) |
-| `-version`  | -       | Show version information                   |
-| `-help`     | -       | Show help on startup                       |
+| Flag        | Default | Description                                                                              |
+| ----------- | ------- | ---------------------------------------------------------------------------------------- |
+| `-i`        | `1s`    | Ping interval (min: 100ms)                                                               |
+| `-history`  | `30000` | Number of samples to keep in history                                                     |
+| `-exporter` | -       | Enable Prometheus exporter (e.g., `:9090`)                                               |
+| `-pprof`    | -       | Enable pprof server (`:6060` auto-binds to localhost; use `0.0.0.0:6060` for all ifaces) |
+| `-version`  | -       | Show version information                                                                 |
+| `-help`     | -       | Show help on startup                                                                     |
 
 ## Keyboard Controls
 
@@ -151,7 +169,9 @@ make test
 make test-cover
 
 # Lint
-make lint
+make lint           # Go code only
+make lint-md        # Markdown files only
+make lint-all       # Both Go and markdown
 
 # Cross-compile all platforms
 make build-all

@@ -7,6 +7,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Pingheat** is a cross-platform terminal application that visualizes network latency as a real-time scrolling heatmap.
 It optionally exports Prometheus metrics and targets Go 1.25+ on Linux, macOS, and Windows.
 
+## Development Dependencies
+
+**Required:** Go 1.25+, Git
+
+**Optional:** golangci-lint (Go linting), Node.js/npx (markdown linting), GoReleaser (releases)
+
 ## Build & Development Commands
 
 ```bash
@@ -25,7 +31,9 @@ make test-cover              # Generate HTML coverage report (coverage.html)
 make cover-summary           # Print coverage percentage
 
 # Linting & Dependencies
-make lint                    # Run golangci-lint
+make lint                    # Run golangci-lint on Go code
+make lint-md                 # Lint markdown files
+make lint-all                # Run all linters (Go + markdown)
 make deps                    # Download and tidy modules
 
 # Release (requires goreleaser installed)
@@ -162,6 +170,18 @@ Use `testdata/` fixtures:
 - `testdata/windows.txt` - Windows ping output samples
 
 When adding new parsers or fixing bugs, update these fixtures.
+
+## Before Committing
+
+Always validate code quality before committing:
+
+```bash
+make test          # Run tests with race detector
+make cover-summary # Check coverage (aim for >60%)
+make lint-all      # Lint both Go code and markdown files
+```
+
+**Critical:** Always run `make lint-md` before committing markdown changes. Formatting errors break documentation rendering on GitHub.
 
 ## Common Gotchas
 

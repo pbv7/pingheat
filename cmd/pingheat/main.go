@@ -105,6 +105,9 @@ func parseArgs(args []string, program string) (parseResult, error) {
 	if *pprofAddr != "" {
 		cfg.PprofEnabled = true
 		addr := *pprofAddr
+		// Security: Auto-bind to localhost when only port specified (:6060).
+		// This prevents exposing pprof debugging endpoints to network.
+		// To bind to all interfaces, explicitly use 0.0.0.0:6060 or ::.
 		if strings.HasPrefix(addr, ":") {
 			addr = "127.0.0.1" + addr
 		}

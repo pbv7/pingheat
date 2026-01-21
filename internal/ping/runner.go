@@ -43,8 +43,10 @@ func (r *Runner) Run(ctx context.Context, samples chan<- Sample) error {
 	target := normalizeTarget(r.target)
 
 	if runtime.GOOS == "windows" {
-		// Windows: Use cmd.exe to set code page to 437 (US English)
-		// This ensures ping output is in English regardless of system locale
+		// Windows: Use cmd.exe to set code page to 437 (US English).
+		// This ensures ping output is in English regardless of system locale.
+		// Note: We build the command as a string for cmd.exe instead of passing
+		// separate args because ping needs to be invoked after chcp.
 		if err := validateWindowsTarget(target); err != nil {
 			return err
 		}
@@ -205,7 +207,10 @@ func validateWindowsTarget(target string) error {
 	return nil
 }
 
-// escapeCmdArg escapes percent signs to avoid cmd.exe expansion.
+// escapeCmdArg escapes percent signs to avoid cmd.exe variable expansion.
+// We only escape %, not quote the argument, because cmd.exe /C expects
+// a command string (not separate arguments). Quoting breaks ping.exe parsing.
+// Example: cmd.exe /C "ping -t google.com" works, but "cmd.exe" "/C" "ping -t \"google.com\"" fails.
 func escapeCmdArg(arg string) string {
 	return strings.ReplaceAll(arg, "%", "^%")
 }
@@ -221,6 +226,9 @@ func isIPv6Literal(target string) bool {
 }
 
 // normalizeTarget removes bracket wrapping from IPv6 literals.
+// Note: This only removes brackets; it doesn't force IPv6 resolution.
+// Hostnames like [google.com] will still resolve to IPv4 if that's what DNS returns.
+// Use isIPv6Literal() to detect actual IPv6 addresses and route to ping6 or -6 flag.
 func normalizeTarget(target string) string {
 	if len(target) >= 2 && strings.HasPrefix(target, "[") && strings.HasSuffix(target, "]") {
 		return target[1 : len(target)-1]
