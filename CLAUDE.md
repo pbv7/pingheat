@@ -34,7 +34,9 @@ make release-snapshot        # Test release build locally
 make release                 # Create actual release (requires git tag)
 
 # Cleanup
-make clean                   # Remove bin/, coverage files
+make clean                   # Remove bin/ and coverage files
+make clean-dist              # Remove dist/ (GoReleaser output)
+make clean-all               # Remove everything (clean + clean-dist)
 ```
 
 ## Architecture

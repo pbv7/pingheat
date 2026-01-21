@@ -158,6 +158,11 @@ make build-all
 
 # Build with GoReleaser (snapshot)
 make release-snapshot
+
+# Clean build artifacts
+make clean           # Remove bin/ and coverage files
+make clean-dist      # Remove dist/ (GoReleaser output)
+make clean-all       # Remove everything
 ```
 
 ## Platform Support
