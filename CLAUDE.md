@@ -196,6 +196,19 @@ make lint-all      # Lint Go code, markdown files, and workflows
 make lint-workflows  # Validates GitHub Actions workflows with actionlint
 ```
 
+### Commit Message Conventions
+
+**IMPORTANT:** Do NOT include "Co-Authored-By: Claude..." lines in commit messages for this project.
+
+Commit messages should follow conventional commits format when applicable:
+
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `docs:` - Documentation changes
+- `ci:` - CI/CD changes
+- `refactor:` - Code refactoring
+- `test:` - Test changes
+
 ## CI/CD Pipelines
 
 GitHub Actions workflows automate testing, linting, security scanning, and releases.
