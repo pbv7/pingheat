@@ -119,12 +119,15 @@ make clean-all               # Remove everything (clean + clean-dist)
 
 7. **Approve the PR** (required for solo dev workflow):
 
-   ```bash
-   # Via GitHub CLI:
-   gh pr review --approve
+   **Note**: GitHub doesn't allow self-approval via CLI. You must use the web UI:
 
-   # Or click "Review changes" → "Approve" → "Submit review" on GitHub web UI
-   ```
+   - Go to the PR page
+   - Click **"Files changed"** tab
+   - Click **"Review changes"** button (top right)
+   - Select **"Approve"**
+   - Click **"Submit review"**
+
+   Or use admin bypass (see alternative workflow below).
 
 8. **Merge the PR**:
 
@@ -142,6 +145,21 @@ make clean-all               # Remove everything (clean + clean-dist)
    git pull
    ```
 
+### Alternative: Admin Bypass Workflow (Solo Dev)
+
+If you have repository admin permissions and enabled "Repository admin" in the bypass list, you can skip manual approval:
+
+```bash
+# After creating PR and CI passes:
+gh pr merge --squash --delete-branch --admin
+
+# Update local main
+git checkout main
+git pull
+```
+
+**Note**: The `--admin` flag uses administrator privileges to bypass branch protection rules.
+
 ### Common Workflows
 
 **Updating dependencies**:
@@ -157,9 +175,11 @@ git commit -m "chore: update dependencies to latest versions"
 git push -u origin chore/update-dependencies
 gh pr create --title "chore: update dependencies" --body "Updated all dependencies to latest versions"
 
-# After CI passes:
-gh pr review --approve
+# After CI passes, approve via web UI, then:
 gh pr merge --squash --delete-branch
+
+# Or use admin bypass:
+gh pr merge --squash --delete-branch --admin
 
 # Update local main
 git checkout main
@@ -177,9 +197,8 @@ git commit -m "docs: fix typo in installation instructions"
 git push -u origin fix/typo-in-readme
 gh pr create
 
-# After CI passes:
-gh pr review --approve
-gh pr merge --squash --delete-branch
+# After CI passes, approve via web UI or use admin bypass:
+gh pr merge --squash --delete-branch --admin
 git checkout main && git pull
 ```
 
