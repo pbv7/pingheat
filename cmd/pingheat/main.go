@@ -91,11 +91,23 @@ func parseArgs(args []string, program string) (parseResult, error) {
 	}
 
 	// Resolve interval: prefer -interval if set, otherwise use -i
-	interval := *intervalLong
-	if *intervalShort != cfg.Interval {
+	// Use flag.Visit to reliably detect which flags were actually provided
+	interval := cfg.Interval
+	intervalShortSet := false
+	intervalLongSet := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "i" {
+			intervalShortSet = true
+		}
+		if f.Name == "interval" {
+			intervalLongSet = true
+		}
+	})
+
+	if intervalShortSet {
 		interval = *intervalShort
 	}
-	if *intervalLong != cfg.Interval {
+	if intervalLongSet {
 		interval = *intervalLong
 	}
 
