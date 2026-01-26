@@ -221,6 +221,20 @@ git push origin main
 # Error: Changes must be made through a pull request
 ```
 
+### Code Review Feedback
+
+After creating a PR, check for review comments:
+
+```bash
+# View all PR comments
+gh pr view <PR_NUMBER> --comments
+
+# View inline code review comments
+gh api repos/pbv7/pingheat/pulls/<PR_NUMBER>/comments | jq -r '.[] | "\(.user.login) on line \(.line): \(.body)"'
+```
+
+Evaluate feedback critically - verify suggestions are correct and relevant before applying.
+
 ## Architecture
 
 ### Component-Based Design with Channel Communication

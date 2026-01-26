@@ -56,7 +56,8 @@ func parseArgs(args []string, program string) (parseResult, error) {
 	fs := flag.NewFlagSet(program, flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 
-	interval := fs.Duration("i", cfg.Interval, "Ping interval")
+	intervalShort := fs.Duration("i", cfg.Interval, "Ping interval (shorthand for -interval)")
+	intervalLong := fs.Duration("interval", cfg.Interval, "Ping interval")
 	historySize := fs.Int("history", cfg.HistorySize, "History buffer size (samples)")
 	exporterAddr := fs.String("exporter", "", "Enable Prometheus exporter on address (e.g., :9090)")
 	pprofAddr := fs.String("pprof", "", "Enable pprof server on address (e.g., :6060 binds to localhost)")
@@ -70,7 +71,8 @@ func parseArgs(args []string, program string) (parseResult, error) {
 		fs.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\nExamples:\n")
 		fmt.Fprintf(os.Stderr, "  %s google.com                    # Ping google.com with default settings\n", program)
-		fmt.Fprintf(os.Stderr, "  %s -i 500ms 8.8.8.8              # Ping every 500ms\n", program)
+		fmt.Fprintf(os.Stderr, "  %s -i 500ms 8.8.8.8              # Ping every 500ms (short form)\n", program)
+		fmt.Fprintf(os.Stderr, "  %s -interval 500ms 8.8.8.8       # Ping every 500ms (long form)\n", program)
 		fmt.Fprintf(os.Stderr, "  %s -exporter :9090 1.1.1.1       # Enable Prometheus metrics on :9090\n", program)
 		fmt.Fprintf(os.Stderr, "  %s -pprof :6060 google.com       # Enable pprof server on localhost:6060\n", program)
 	}
@@ -88,12 +90,33 @@ func parseArgs(args []string, program string) (parseResult, error) {
 		return parseResult{usage: usage}, errMissingTarget
 	}
 
-	if *interval < 100*time.Millisecond {
+	// Resolve interval: prefer -interval if set, otherwise use -i
+	// Use flag.Visit to reliably detect which flags were actually provided
+	interval := cfg.Interval
+	intervalShortSet := false
+	intervalLongSet := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "i" {
+			intervalShortSet = true
+		}
+		if f.Name == "interval" {
+			intervalLongSet = true
+		}
+	})
+
+	if intervalShortSet {
+		interval = *intervalShort
+	}
+	if intervalLongSet {
+		interval = *intervalLong
+	}
+
+	if interval < 100*time.Millisecond {
 		return parseResult{usage: usage}, errIntervalTooShort
 	}
 
 	cfg.Target = fs.Args()[0]
-	cfg.Interval = *interval
+	cfg.Interval = interval
 	cfg.HistorySize = *historySize
 	cfg.ShowHelp = *showHelp
 

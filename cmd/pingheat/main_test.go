@@ -19,6 +19,46 @@ func TestParseArgsIntervalTooShort(t *testing.T) {
 	}
 }
 
+func TestParseArgsIntervalLongForm(t *testing.T) {
+	res, err := parseArgs([]string{"-interval", "500ms", "example.com"}, "pingheat")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.cfg.Interval.Milliseconds() != 500 {
+		t.Fatalf("expected Interval 500ms, got %v", res.cfg.Interval)
+	}
+}
+
+func TestParseArgsIntervalLongFormTooShort(t *testing.T) {
+	_, err := parseArgs([]string{"-interval", "50ms", "example.com"}, "pingheat")
+	if !errors.Is(err, errIntervalTooShort) {
+		t.Fatalf("expected errIntervalTooShort, got %v", err)
+	}
+}
+
+func TestParseArgsBothIntervalFlags(t *testing.T) {
+	// When both flags are set, -interval should take precedence
+	res, err := parseArgs([]string{"-i", "200ms", "-interval", "300ms", "example.com"}, "pingheat")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.cfg.Interval.Milliseconds() != 300 {
+		t.Fatalf("expected Interval 300ms (from -interval flag), got %v", res.cfg.Interval)
+	}
+}
+
+func TestParseArgsIntervalPrecedenceWithDefaultValue(t *testing.T) {
+	// Edge case: -interval should take precedence even when explicitly set to default value
+	// This tests the bug fix where we use flag.Visit() instead of comparing to defaults
+	res, err := parseArgs([]string{"-i", "200ms", "-interval", "1s", "example.com"}, "pingheat")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.cfg.Interval.Milliseconds() != 1000 {
+		t.Fatalf("expected Interval 1s (from -interval flag), got %v", res.cfg.Interval)
+	}
+}
+
 func TestParseArgsShowVersion(t *testing.T) {
 	res, err := parseArgs([]string{"-version"}, "pingheat")
 	if err != nil {

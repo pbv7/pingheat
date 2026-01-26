@@ -72,8 +72,11 @@ make build
 # Basic ping
 pingheat google.com
 
-# Custom interval (500ms)
+# Custom interval (500ms) - short form
 pingheat -i 500ms 8.8.8.8
+
+# Custom interval (500ms) - long form
+pingheat -interval 500ms 8.8.8.8
 
 # IPv6 literal (brackets optional)
 pingheat 2001:db8::1
@@ -101,14 +104,14 @@ pingheat -i 200ms -history 50000 -exporter :9090 -pprof :6060 cloudflare.com
 
 ### Command Line Options
 
-| Flag        | Default | Description                                                                              |
-| ----------- | ------- | ---------------------------------------------------------------------------------------- |
-| `-i`        | `1s`    | Ping interval (min: 100ms)                                                               |
-| `-history`  | `30000` | Number of samples to keep in history                                                     |
-| `-exporter` | -       | Enable Prometheus exporter (e.g., `:9090`)                                               |
-| `-pprof`    | -       | Enable pprof server (`:6060` auto-binds to localhost; use `0.0.0.0:6060` for all ifaces) |
-| `-version`  | -       | Show version information                                                                 |
-| `-help`     | -       | Show help on startup                                                                     |
+| Flag                  | Default | Description                                                                              |
+| --------------------- | ------- | ---------------------------------------------------------------------------------------- |
+| `-i`, `-interval`     | `1s`    | Ping interval (min: 100ms)                                                               |
+| `-history`            | `30000` | Number of samples to keep in history                                                     |
+| `-exporter`           | -       | Enable Prometheus exporter (e.g., `:9090`)                                               |
+| `-pprof`              | -       | Enable pprof server (`:6060` auto-binds to localhost; use `0.0.0.0:6060` for all ifaces) |
+| `-version`            | -       | Show version information                                                                 |
+| `-help`               | -       | Show help on startup                                                                     |
 
 ## Keyboard Controls
 
