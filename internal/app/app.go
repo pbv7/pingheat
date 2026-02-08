@@ -156,6 +156,7 @@ func (a *App) Run() error {
 		return <-done
 	case err := <-a.errors:
 		program.Quit()
+		<-done // Wait for UI to shut down gracefully
 		return err
 	}
 }
