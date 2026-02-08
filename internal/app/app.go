@@ -156,7 +156,10 @@ func (a *App) Run() error {
 		return <-done
 	case err := <-a.errors:
 		program.Quit()
-		<-done // Wait for UI to shut down gracefully
+		// Wait for UI to shut down and capture any shutdown errors
+		if uiErr := <-done; uiErr != nil {
+			return fmt.Errorf("original error: %w; failed to shutdown UI: %v", err, uiErr)
+		}
 		return err
 	}
 }
