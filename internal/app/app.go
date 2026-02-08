@@ -181,8 +181,13 @@ func (a *App) Run() error {
 		return err
 	case <-ctx.Done():
 		program.Quit()
-		// Wait for UI goroutine to fully terminate with timeout
-		return waitForUIShutdown(done, nil)
+		// Check for a pending component error to avoid race where it could be lost
+		select {
+		case err := <-a.errors:
+			return waitForUIShutdown(done, err)
+		default:
+			return waitForUIShutdown(done, nil)
+		}
 	case err := <-a.errors:
 		program.Quit()
 		// Wait for UI to shut down with timeout and capture any shutdown errors
