@@ -152,7 +152,13 @@ func (a *App) Run() error {
 		return err
 	case <-ctx.Done():
 		program.Quit()
-		return nil
+		// Check if program error arrived while handling ctx.Done()
+		select {
+		case err := <-done:
+			return err
+		default:
+			return nil
+		}
 	case err := <-a.errors:
 		program.Quit()
 		return err
