@@ -17,6 +17,11 @@ import (
 	"github.com/pbv7/pingheat/internal/ui"
 )
 
+const (
+	// shutdownTimeout is the maximum time to wait for UI graceful shutdown.
+	shutdownTimeout = 5 * time.Second
+)
+
 // runner emits ping samples until the context is cancelled.
 type runner interface {
 	Run(ctx context.Context, samples chan<- ping.Sample) error
@@ -89,6 +94,31 @@ func newProgram(model tea.Model) program {
 	return tea.NewProgram(model, tea.WithAltScreen())
 }
 
+// waitForUIShutdown waits for the UI goroutine to terminate with a timeout.
+// If originalErr is not nil, it wraps UI errors with the original error.
+// If originalErr is nil, it returns UI errors directly.
+func waitForUIShutdown(done <-chan error, originalErr error) error {
+	select {
+	case uiErr := <-done:
+		if originalErr != nil {
+			// Component error case: wrap UI error with original error
+			if uiErr != nil {
+				return fmt.Errorf("original error: %w; failed to shutdown UI: %v", originalErr, uiErr)
+			}
+			return originalErr
+		}
+		// Context cancellation case: return UI error directly
+		return uiErr
+	case <-time.After(shutdownTimeout):
+		if originalErr != nil {
+			// Component error case: wrap timeout with original error
+			return fmt.Errorf("original error: %w; UI failed to shut down within timeout", originalErr)
+		}
+		// Context cancellation case: return timeout error directly
+		return fmt.Errorf("UI failed to shut down within timeout")
+	}
+}
+
 // Run starts the application.
 func (a *App) Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -154,24 +184,11 @@ func (a *App) Run() error {
 	case <-ctx.Done():
 		program.Quit()
 		// Wait for UI goroutine to fully terminate with timeout
-		select {
-		case err := <-done:
-			return err
-		case <-time.After(5 * time.Second):
-			return fmt.Errorf("UI failed to shut down within 5 seconds")
-		}
+		return waitForUIShutdown(done, nil)
 	case err := <-a.errors:
 		program.Quit()
 		// Wait for UI to shut down with timeout and capture any shutdown errors
-		select {
-		case uiErr := <-done:
-			if uiErr != nil {
-				return fmt.Errorf("original error: %w; failed to shutdown UI: %v", err, uiErr)
-			}
-			return err
-		case <-time.After(5 * time.Second):
-			return fmt.Errorf("original error: %w; UI failed to shut down within 5 seconds", err)
-		}
+		return waitForUIShutdown(done, err)
 	}
 }
 
