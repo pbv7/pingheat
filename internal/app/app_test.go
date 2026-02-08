@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -56,6 +57,7 @@ type stubProgram struct {
 	block      chan struct{}
 	runErr     error
 	quitCalled bool
+	once       sync.Once
 }
 
 func (p *stubProgram) Run() (tea.Model, error) {
@@ -65,6 +67,9 @@ func (p *stubProgram) Run() (tea.Model, error) {
 
 func (p *stubProgram) Quit() {
 	p.quitCalled = true
+	p.once.Do(func() {
+		close(p.block)
+	})
 }
 
 func newTestApp(r runner, e metricsExporter, p profiler, prog *stubProgram) *App {
@@ -88,7 +93,6 @@ func TestRunReturnsRunnerError(t *testing.T) {
 	app := newTestApp(&stubRunner{err: errRunner}, nil, nil, prog)
 
 	err := app.Run()
-	close(prog.block)
 
 	if !errors.Is(err, errRunner) {
 		t.Fatalf("expected runner error, got %v", err)
@@ -104,7 +108,6 @@ func TestRunReturnsExporterError(t *testing.T) {
 	app := newTestApp(&stubRunner{}, &stubExporter{startErr: errExporter}, nil, prog)
 
 	err := app.Run()
-	close(prog.block)
 
 	if !errors.Is(err, errExporter) {
 		t.Fatalf("expected exporter error, got %v", err)
@@ -120,7 +123,6 @@ func TestRunReturnsPprofError(t *testing.T) {
 	app := newTestApp(&stubRunner{}, nil, &stubProfiler{startErr: errProfiler}, prog)
 
 	err := app.Run()
-	close(prog.block)
 
 	if !errors.Is(err, errProfiler) {
 		t.Fatalf("expected pprof error, got %v", err)
@@ -133,7 +135,7 @@ func TestRunReturnsPprofError(t *testing.T) {
 func TestRunReturnsProgramError(t *testing.T) {
 	errProgram := errors.New("program failed")
 	prog := &stubProgram{block: make(chan struct{}), runErr: errProgram}
-	close(prog.block)
+	prog.Quit() // Use Quit() instead of manual close to avoid double-close panic
 	app := newTestApp(&stubRunner{}, nil, nil, prog)
 
 	err := app.Run()

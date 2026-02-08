@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pbv7/pingheat/internal/config"
@@ -14,6 +15,11 @@ import (
 	"github.com/pbv7/pingheat/internal/ping"
 	"github.com/pbv7/pingheat/internal/pprof"
 	"github.com/pbv7/pingheat/internal/ui"
+)
+
+const (
+	// shutdownTimeout is the maximum time to wait for UI graceful shutdown.
+	shutdownTimeout = 5 * time.Second
 )
 
 // runner emits ping samples until the context is cancelled.
@@ -88,6 +94,29 @@ func newProgram(model tea.Model) program {
 	return tea.NewProgram(model, tea.WithAltScreen())
 }
 
+// waitForUIShutdown waits for the UI goroutine to terminate with a timeout.
+// If originalErr is not nil, it wraps UI errors with the original error.
+// If originalErr is nil, it returns UI errors directly.
+func waitForUIShutdown(done <-chan error, originalErr error) error {
+	var shutdownErr error
+	select {
+	case uiErr := <-done:
+		shutdownErr = uiErr
+	case <-time.After(shutdownTimeout):
+		shutdownErr = fmt.Errorf("UI failed to shut down within %v", shutdownTimeout)
+	}
+
+	if originalErr == nil {
+		return shutdownErr
+	}
+
+	if shutdownErr != nil {
+		return fmt.Errorf("original error: %w; failed to shutdown UI: %v", originalErr, shutdownErr)
+	}
+
+	return originalErr
+}
+
 // Run starts the application.
 func (a *App) Run() error {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -152,10 +181,17 @@ func (a *App) Run() error {
 		return err
 	case <-ctx.Done():
 		program.Quit()
-		return nil
+		// Check for a pending component error to avoid race where it could be lost
+		select {
+		case err := <-a.errors:
+			return waitForUIShutdown(done, err)
+		default:
+			return waitForUIShutdown(done, nil)
+		}
 	case err := <-a.errors:
 		program.Quit()
-		return err
+		// Wait for UI to shut down with timeout and capture any shutdown errors
+		return waitForUIShutdown(done, err)
 	}
 }
 
