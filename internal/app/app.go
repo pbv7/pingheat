@@ -152,13 +152,8 @@ func (a *App) Run() error {
 		return err
 	case <-ctx.Done():
 		program.Quit()
-		// Check if program error arrived while handling ctx.Done()
-		select {
-		case err := <-done:
-			return err
-		default:
-			return nil
-		}
+		// Wait for UI goroutine to fully terminate and capture final error
+		return <-done
 	case err := <-a.errors:
 		program.Quit()
 		return err
