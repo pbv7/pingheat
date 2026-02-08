@@ -135,7 +135,7 @@ func TestRunReturnsPprofError(t *testing.T) {
 func TestRunReturnsProgramError(t *testing.T) {
 	errProgram := errors.New("program failed")
 	prog := &stubProgram{block: make(chan struct{}), runErr: errProgram}
-	close(prog.block)
+	prog.Quit() // Use Quit() instead of manual close to avoid double-close panic
 	app := newTestApp(&stubRunner{}, nil, nil, prog)
 
 	err := app.Run()

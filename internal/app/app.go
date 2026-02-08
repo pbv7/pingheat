@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pbv7/pingheat/internal/config"
@@ -152,15 +153,25 @@ func (a *App) Run() error {
 		return err
 	case <-ctx.Done():
 		program.Quit()
-		// Wait for UI goroutine to fully terminate and capture final error
-		return <-done
+		// Wait for UI goroutine to fully terminate with timeout
+		select {
+		case err := <-done:
+			return err
+		case <-time.After(5 * time.Second):
+			return fmt.Errorf("UI failed to shut down within 5 seconds")
+		}
 	case err := <-a.errors:
 		program.Quit()
-		// Wait for UI to shut down and capture any shutdown errors
-		if uiErr := <-done; uiErr != nil {
-			return fmt.Errorf("original error: %w; failed to shutdown UI: %v", err, uiErr)
+		// Wait for UI to shut down with timeout and capture any shutdown errors
+		select {
+		case uiErr := <-done:
+			if uiErr != nil {
+				return fmt.Errorf("original error: %w; failed to shutdown UI: %v", err, uiErr)
+			}
+			return err
+		case <-time.After(5 * time.Second):
+			return fmt.Errorf("original error: %w; UI failed to shut down within 5 seconds", err)
 		}
-		return err
 	}
 }
 
