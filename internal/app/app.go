@@ -98,26 +98,23 @@ func newProgram(model tea.Model) program {
 // If originalErr is not nil, it wraps UI errors with the original error.
 // If originalErr is nil, it returns UI errors directly.
 func waitForUIShutdown(done <-chan error, originalErr error) error {
+	var shutdownErr error
 	select {
 	case uiErr := <-done:
-		if originalErr != nil {
-			// Component error case: wrap UI error with original error
-			if uiErr != nil {
-				return fmt.Errorf("original error: %w; failed to shutdown UI: %v", originalErr, uiErr)
-			}
-			return originalErr
-		}
-		// Context cancellation case: return UI error directly
-		return uiErr
+		shutdownErr = uiErr
 	case <-time.After(shutdownTimeout):
-		timeoutErr := fmt.Errorf("UI failed to shut down within %v", shutdownTimeout)
-		if originalErr != nil {
-			// Component error case: wrap timeout with original error
-			return fmt.Errorf("original error: %w; failed to shutdown UI: %v", originalErr, timeoutErr)
-		}
-		// Context cancellation case: return timeout error directly
-		return timeoutErr
+		shutdownErr = fmt.Errorf("UI failed to shut down within %v", shutdownTimeout)
 	}
+
+	if originalErr == nil {
+		return shutdownErr
+	}
+
+	if shutdownErr != nil {
+		return fmt.Errorf("original error: %w; failed to shutdown UI: %v", originalErr, shutdownErr)
+	}
+
+	return originalErr
 }
 
 // Run starts the application.
