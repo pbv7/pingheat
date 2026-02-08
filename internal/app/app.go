@@ -110,12 +110,13 @@ func waitForUIShutdown(done <-chan error, originalErr error) error {
 		// Context cancellation case: return UI error directly
 		return uiErr
 	case <-time.After(shutdownTimeout):
+		timeoutErr := fmt.Errorf("UI failed to shut down within %v", shutdownTimeout)
 		if originalErr != nil {
 			// Component error case: wrap timeout with original error
-			return fmt.Errorf("original error: %w; UI failed to shut down within timeout", originalErr)
+			return fmt.Errorf("original error: %w; failed to shutdown UI: %v", originalErr, timeoutErr)
 		}
 		// Context cancellation case: return timeout error directly
-		return fmt.Errorf("UI failed to shut down within timeout")
+		return timeoutErr
 	}
 }
 
