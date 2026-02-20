@@ -183,6 +183,10 @@ func validateTargetFormat(target string) error {
 		host := target[1 : len(target)-1]
 		// Strip zone ID if present (e.g., fe80::1%en0 -> fe80::1)
 		if zoneIndex := strings.Index(host, "%"); zoneIndex != -1 {
+			// Reject empty zone IDs (e.g., [fe80::1%])
+			if zoneIndex == len(host)-1 {
+				return fmt.Errorf("%w: %q has empty zone identifier", errInvalidTarget, target)
+			}
 			host = host[:zoneIndex]
 		}
 		if net.ParseIP(host) != nil {
@@ -194,12 +198,16 @@ func validateTargetFormat(target string) error {
 
 	// Check for IPv6 with zone ID (e.g., fe80::1%en0)
 	if zoneIndex := strings.Index(target, "%"); zoneIndex != -1 {
+		// Reject empty zone IDs (e.g., fe80::1%)
+		if zoneIndex == len(target)-1 {
+			return fmt.Errorf("%w: %q has empty zone identifier", errInvalidTarget, target)
+		}
 		host := target[:zoneIndex]
 		if net.ParseIP(host) != nil {
 			return nil // Valid IPv6 with zone ID
 		}
 		// If a '%' is present, it must be a valid zoned IPv6 address. Hostnames cannot contain '%'.
-		return fmt.Errorf("%w: %q must be a valid IP address or hostname", errInvalidTarget, target)
+		return fmt.Errorf("%w: %q must be a valid zoned IPv6 address (hostnames cannot contain '%%')", errInvalidTarget, target)
 	}
 
 	// Allow absolute FQDNs with trailing dot (e.g., example.com. or localhost.)

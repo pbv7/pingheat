@@ -160,6 +160,9 @@ func TestParseArgsInvalidTarget(t *testing.T) {
 		{"bracketed invalid", "[not-an-ip]"},
 		{"invalid zone ID", "invalid%zone"},
 		{"hostname with percent", "example%test.com"},
+		{"empty zone ID", "fe80::1%"},
+		{"empty zone ID bracketed", "[fe80::1%]"},
+		{"empty zone ID IPv6", "2001:db8::1%"},
 	}
 
 	for _, tt := range tests {
