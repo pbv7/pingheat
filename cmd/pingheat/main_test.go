@@ -156,6 +156,8 @@ func TestParseArgsInvalidTarget(t *testing.T) {
 		{"double dots", "google..com"},
 		{"trailing hyphen", "google.com-"},
 		{"underscore in hostname", "google_com"},
+		{"bracketed hostname", "[google.com]"},
+		{"bracketed invalid", "[not-an-ip]"},
 	}
 
 	for _, tt := range tests {

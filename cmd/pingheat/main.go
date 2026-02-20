@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -175,17 +176,19 @@ func validateTargetFormat(target string) error {
 		return nil
 	}
 
-	// Handle IPv6 literals with brackets
-	host := target
-	if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
-		host = host[1 : len(host)-1]
+	// Handle IPv6 literals with brackets.
+	// If it has brackets, it MUST be an IP and not a hostname.
+	if strings.HasPrefix(target, "[") && strings.HasSuffix(target, "]") {
+		host := target[1 : len(target)-1]
 		if net.ParseIP(host) != nil {
-			return nil
+			return nil // Valid bracketed IPv6
 		}
+		// Invalid bracketed value (not an IP)
+		return fmt.Errorf("%w: %q must be a valid IP address or hostname", errInvalidTarget, target)
 	}
 
 	// Validate hostname format (RFC 1123 compliant)
-	if !hostnameRe.MatchString(host) {
+	if !hostnameRe.MatchString(target) {
 		return fmt.Errorf("%w: %q must be a valid IP address or hostname", errInvalidTarget, target)
 	}
 
@@ -208,8 +211,8 @@ func validateAddress(addr, name string) error {
 	}
 
 	// Parse port number
-	port := 0
-	if _, err := fmt.Sscanf(portStr, "%d", &port); err != nil {
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
 		return fmt.Errorf("invalid %s port %q: %w", name, portStr, err)
 	}
 
