@@ -166,25 +166,38 @@ func parseArgs(args []string, program string) (parseResult, error) {
 
 // validateTargetFormat validates target is a valid IP address or hostname.
 // Does NOT perform DNS lookups - only format validation.
+// Supports IPv6 zone IDs (e.g., fe80::1%en0 or [fe80::1%en0]).
 func validateTargetFormat(target string) error {
 	if target == "" {
 		return errInvalidTarget
 	}
 
-	// Check if it's a valid IP (IPv4 or IPv6)
+	// Check if it's a valid IP (IPv4 or IPv6 without zone)
 	if net.ParseIP(target) != nil {
 		return nil
 	}
 
 	// Handle IPv6 literals with brackets.
-	// If it has brackets, it MUST be an IP and not a hostname.
+	// If it has brackets, it MUST be an IP (with optional zone) and not a hostname.
 	if strings.HasPrefix(target, "[") && strings.HasSuffix(target, "]") {
 		host := target[1 : len(target)-1]
+		// Strip zone ID if present (e.g., fe80::1%en0 -> fe80::1)
+		if zoneIndex := strings.Index(host, "%"); zoneIndex != -1 {
+			host = host[:zoneIndex]
+		}
 		if net.ParseIP(host) != nil {
-			return nil // Valid bracketed IPv6
+			return nil // Valid bracketed IPv6 (with optional zone)
 		}
 		// Invalid bracketed value (not an IP)
 		return fmt.Errorf("%w: %q must be a valid IP address or hostname", errInvalidTarget, target)
+	}
+
+	// Check for IPv6 with zone ID (e.g., fe80::1%en0)
+	if zoneIndex := strings.Index(target, "%"); zoneIndex != -1 {
+		host := target[:zoneIndex]
+		if net.ParseIP(host) != nil {
+			return nil // Valid IPv6 with zone ID
+		}
 	}
 
 	// Validate hostname format (RFC 1123 compliant)

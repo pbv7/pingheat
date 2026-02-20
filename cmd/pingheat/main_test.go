@@ -186,6 +186,9 @@ func TestParseArgsValidTargets(t *testing.T) {
 		{"IPv6 loopback", "::1"},
 		{"IPv6 with brackets", "[::1]"},
 		{"IPv6 full with brackets", "[2001:db8::1]"},
+		{"IPv6 link-local with zone", "fe80::1%en0"},
+		{"IPv6 with zone eth0", "fe80::1%eth0"},
+		{"IPv6 bracketed with zone", "[fe80::1%en0]"},
 	}
 
 	for _, tt := range tests {
