@@ -158,6 +158,8 @@ func TestParseArgsInvalidTarget(t *testing.T) {
 		{"underscore in hostname", "google_com"},
 		{"bracketed hostname", "[google.com]"},
 		{"bracketed invalid", "[not-an-ip]"},
+		{"invalid zone ID", "invalid%zone"},
+		{"hostname with percent", "example%test.com"},
 	}
 
 	for _, tt := range tests {
@@ -189,6 +191,9 @@ func TestParseArgsValidTargets(t *testing.T) {
 		{"IPv6 link-local with zone", "fe80::1%en0"},
 		{"IPv6 with zone eth0", "fe80::1%eth0"},
 		{"IPv6 bracketed with zone", "[fe80::1%en0]"},
+		{"absolute FQDN with trailing dot", "example.com."},
+		{"localhost with trailing dot", "localhost."},
+		{"subdomain with trailing dot", "www.google.com."},
 	}
 
 	for _, tt := range tests {

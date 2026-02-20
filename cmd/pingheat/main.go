@@ -198,10 +198,16 @@ func validateTargetFormat(target string) error {
 		if net.ParseIP(host) != nil {
 			return nil // Valid IPv6 with zone ID
 		}
+		// If a '%' is present, it must be a valid zoned IPv6 address. Hostnames cannot contain '%'.
+		return fmt.Errorf("%w: %q must be a valid IP address or hostname", errInvalidTarget, target)
 	}
 
+	// Allow absolute FQDNs with trailing dot (e.g., example.com. or localhost.)
+	// Strip trailing dot before hostname validation
+	hostname := strings.TrimSuffix(target, ".")
+
 	// Validate hostname format (RFC 1123 compliant)
-	if !hostnameRe.MatchString(target) {
+	if !hostnameRe.MatchString(hostname) {
 		return fmt.Errorf("%w: %q must be a valid IP address or hostname", errInvalidTarget, target)
 	}
 
