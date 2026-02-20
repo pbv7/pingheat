@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -17,7 +19,15 @@ import (
 var (
 	errMissingTarget    = errors.New("target host required")
 	errIntervalTooShort = errors.New("interval must be at least 100ms")
+	errIntervalTooLong  = errors.New("interval must be at most 1 hour")
+	errInvalidTarget    = errors.New("invalid target format")
+	errInvalidPort      = errors.New("port must be between 1 and 65535")
 )
+
+// hostnameRe validates RFC 1123 compliant hostnames.
+// Allows: letters, digits, hyphens, dots
+// Each label: starts/ends with alphanumeric, max 63 chars
+var hostnameRe = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$`)
 
 // parseResult carries the parsed config and usage handler for errors.
 type parseResult struct {
@@ -114,20 +124,33 @@ func parseArgs(args []string, program string) (parseResult, error) {
 	if interval < 100*time.Millisecond {
 		return parseResult{usage: usage}, errIntervalTooShort
 	}
+	if interval > time.Hour {
+		return parseResult{usage: usage}, errIntervalTooLong
+	}
 
 	cfg.Target = fs.Args()[0]
+	if err := validateTargetFormat(cfg.Target); err != nil {
+		return parseResult{usage: usage}, err
+	}
 	cfg.Interval = interval
 	cfg.HistorySize = *historySize
 	cfg.ShowHelp = *showHelp
 
 	if *exporterAddr != "" {
+		if err := validateAddress(*exporterAddr, "exporter"); err != nil {
+			return parseResult{usage: usage}, err
+		}
 		cfg.ExporterEnabled = true
 		cfg.ExporterAddr = *exporterAddr
 	}
 
 	if *pprofAddr != "" {
-		cfg.PprofEnabled = true
 		addr := *pprofAddr
+		if err := validateAddress(addr, "pprof"); err != nil {
+			return parseResult{usage: usage}, err
+		}
+
+		cfg.PprofEnabled = true
 		// Security: Auto-bind to localhost when only port specified (:6060).
 		// This prevents exposing pprof debugging endpoints to network.
 		// To bind to all interfaces, explicitly use 0.0.0.0:6060 or ::.
@@ -138,4 +161,62 @@ func parseArgs(args []string, program string) (parseResult, error) {
 	}
 
 	return parseResult{cfg: cfg, showVersion: *showVersion, usage: usage}, nil
+}
+
+// validateTargetFormat validates target is a valid IP address or hostname.
+// Does NOT perform DNS lookups - only format validation.
+func validateTargetFormat(target string) error {
+	if target == "" {
+		return errInvalidTarget
+	}
+
+	// Check if it's a valid IP (IPv4 or IPv6)
+	if net.ParseIP(target) != nil {
+		return nil
+	}
+
+	// Handle IPv6 literals with brackets
+	host := target
+	if strings.HasPrefix(host, "[") && strings.HasSuffix(host, "]") {
+		host = host[1 : len(host)-1]
+		if net.ParseIP(host) != nil {
+			return nil
+		}
+	}
+
+	// Validate hostname format (RFC 1123 compliant)
+	if !hostnameRe.MatchString(host) {
+		return fmt.Errorf("%w: %q must be a valid IP address or hostname", errInvalidTarget, target)
+	}
+
+	return nil
+}
+
+// validateAddress validates that an address string contains a valid port (1-65535).
+// Supports formats: ":9090", "localhost:9090", "0.0.0.0:9090", "[::1]:9090"
+func validateAddress(addr, name string) error {
+	// Handle port-only format (":9090") by adding temporary host for parsing
+	hostPort := addr
+	if strings.HasPrefix(addr, ":") {
+		hostPort = "localhost" + addr
+	}
+
+	// Parse host:port using standard library
+	_, portStr, err := net.SplitHostPort(hostPort)
+	if err != nil {
+		return fmt.Errorf("invalid %s address %q: %w", name, addr, err)
+	}
+
+	// Parse port number
+	port := 0
+	if _, err := fmt.Sscanf(portStr, "%d", &port); err != nil {
+		return fmt.Errorf("invalid %s port %q: %w", name, portStr, err)
+	}
+
+	// Validate port range (allow all valid ports including privileged 1-1023)
+	if port < 1 || port > 65535 {
+		return fmt.Errorf("%w for %s: %d", errInvalidPort, name, port)
+	}
+
+	return nil
 }
