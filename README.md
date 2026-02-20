@@ -106,7 +106,7 @@ pingheat -i 200ms -history 50000 -exporter :9090 -pprof :6060 cloudflare.com
 
 | Flag                  | Default | Description                                                                              |
 | --------------------- | ------- | ---------------------------------------------------------------------------------------- |
-| `-i`, `-interval`     | `1s`    | Ping interval (min: 100ms)                                                               |
+| `-i`, `-interval`     | `1s`    | Ping interval (min: 100ms, max: 1h)                                                      |
 | `-history`            | `30000` | Number of samples to keep in history                                                     |
 | `-exporter`           | -       | Enable Prometheus exporter (e.g., `:9090`)                                               |
 | `-pprof`              | -       | Enable pprof server (`:6060` auto-binds to localhost; use `0.0.0.0:6060` for all ifaces) |
