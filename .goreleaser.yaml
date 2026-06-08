@@ -5,9 +5,9 @@ version: 2
 
 before:
   hooks:
-    # Run tests before building
-    - go test ./...
-    - go mod tidy
+    # Strict no-mutation: -mod=readonly errors instead of touching
+    # go.mod / go.sum. PR CI is where tidiness gets fixed.
+    - go test -mod=readonly ./...
 
 builds:
   - id: pingheat
@@ -15,6 +15,7 @@ builds:
     main: ./cmd/pingheat
     env:
       - CGO_ENABLED=0
+      - GOFLAGS=-mod=readonly
 
     # Version info injected at build time
     ldflags:
@@ -112,6 +113,12 @@ release:
   # Create draft release for manual review before publishing
   draft: true
 
+  # Make workflow_dispatch retries idempotent on the GitHub side:
+  # reuse the existing draft and overwrite assets instead of failing
+  # with "release already exists" / "asset already_exists".
+  use_existing_draft: true
+  replace_existing_artifacts: true
+
   # Release name
   name_template: "{{.ProjectName}} v{{.Version}}"
 
@@ -142,7 +149,7 @@ brews:
     repository:
       owner: pbv7
       name: homebrew-tap
-      token: "{{ .Env.GITHUB_TOKEN }}"
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     homepage: https://github.com/pbv7/pingheat
     description: "Network latency heatmap visualizer"
     license: MIT
