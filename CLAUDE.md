@@ -117,22 +117,17 @@ make clean-all               # Remove everything (clean + clean-dist)
    - Codecov will comment with coverage report
    - Dependency Review will scan for vulnerabilities
 
-7. **Approve the PR** (required for solo dev workflow):
+7. **Get the PR approved**:
 
-   **Note**: GitHub doesn't allow self-approval via CLI. You must use the web UI:
+   GitHub does not allow PR authors to approve their own PRs — neither via CLI nor web UI. The "Approve" option is disabled for the author.
 
-   - Go to the PR page
-   - Click **"Files changed"** tab
-   - Click **"Review changes"** button (top right)
-   - Select **"Approve"**
-   - Click **"Submit review"**
-
-   Or use admin bypass (see alternative workflow below).
+   - **Working with others**: another contributor must review and approve.
+   - **Solo developer**: skip the approval gate via admin bypass — see "Alternative: Admin Bypass Workflow" below.
 
 8. **Merge the PR**:
 
    ```bash
-   # Via GitHub CLI (after checks pass and approval):
+   # Via GitHub CLI (after checks pass + approval, or use --admin for solo):
    gh pr merge --squash --delete-branch
 
    # Or use the "Squash and merge" button on GitHub web UI
