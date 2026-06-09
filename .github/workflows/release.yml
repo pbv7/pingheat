@@ -135,6 +135,13 @@ jobs:
     name: Release
     needs: [test, lint, security]
     runs-on: ubuntu-latest
+    # Known limitation: workflow_dispatch checks out the tagged ref,
+    # which means retries against tags created BEFORE this workflow
+    # was merged will use the old .goreleaser.yaml from that tag
+    # (brews.repository.token reading GITHUB_TOKEN, no use_existing_draft
+    # / replace_existing_artifacts). For such pre-fix tags, the retry
+    # path will not work; recovery is delete-and-re-tag. Tags created
+    # AFTER this workflow merges retry cleanly.
     steps:
       - uses: actions/checkout@v6
         with:
