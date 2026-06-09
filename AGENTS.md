@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## Project Overview
 
@@ -374,7 +374,7 @@ make lint-workflows  # Validates GitHub Actions workflows with actionlint
 
 ### Commit Message Conventions
 
-**IMPORTANT:** Do NOT include "Co-Authored-By: Claude..." lines in commit messages for this project.
+**IMPORTANT:** Do NOT include "Co-Authored-By: Codex..." lines in commit messages for this project.
 
 Commit messages should follow conventional commits format when applicable:
 
