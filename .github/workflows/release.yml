@@ -4,76 +4,128 @@ name: Release
 on:
   push:
     tags:
-      - v*
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (for retries; must already exist, vX.Y.Z[...])'
+        required: true
 
 permissions:
   contents: write
 
 jobs:
+  token-check:
+    name: Verify release prerequisites
+    runs-on: ubuntu-latest
+    steps:
+      # Catch missing secret in seconds, before any heavy work.
+      - name: Verify HOMEBREW_TAP_TOKEN is configured
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "HOMEBREW_TAP_TOKEN is not configured."
+            echo "Add it under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+      # Catch revoked / wrongly-scoped PATs by probing the tap repo.
+      # A PAT with no access to pbv7/homebrew-tap returns 404; a revoked
+      # PAT returns 401. A read-only PAT to this repo would still pass
+      # -- that case is uncommon and detected at push time. Token is
+      # passed via env, never echoed.
+      - name: Verify HOMEBREW_TAP_TOKEN has tap-repo access
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if ! gh api repos/pbv7/homebrew-tap -q .full_name >/dev/null; then
+            echo "HOMEBREW_TAP_TOKEN cannot access pbv7/homebrew-tap."
+            echo "Check PAT scope: needs Contents read+write on pbv7/homebrew-tap."
+            exit 1
+          fi
+      # On workflow_dispatch, validate the user-supplied tag input
+      # before downstream jobs check it out. Catches typos (branch
+      # names, SHAs, malformed versions) early.
+      - name: Validate workflow_dispatch tag input
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Anchored semver-ish: vMAJOR.MINOR.PATCH with optional
+          # pre-release (-rc.1) and/or build (+meta) suffixes.
+          if ! [[ "$INPUT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Tag must match vX.Y.Z[-pre][+build]: got '$INPUT_TAG'"
+            exit 1
+          fi
+          # Use the documented singular endpoint:
+          # GET /repos/{owner}/{repo}/git/ref/{ref}
+          # (plural /git/refs/ is legacy and not in current docs).
+          if ! gh api "repos/${{ github.repository }}/git/ref/tags/$INPUT_TAG" >/dev/null 2>&1; then
+            echo "Tag '$INPUT_TAG' does not exist in ${{ github.repository }}."
+            exit 1
+          fi
+
   test:
     name: Pre-release Tests
+    needs: token-check
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+      - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version-file: go.mod
           cache: true
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Run tests
-        run: go test -v -race ./...
+      - run: go mod download
+      - run: go test -v -race ./...
 
   lint:
     name: Pre-release Lint
+    needs: token-check
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+      - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version-file: go.mod
           cache: true
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v4
+      - uses: golangci/golangci-lint-action@v9
         with:
           version: latest
           args: --timeout=5m
           install-mode: goinstall
+      # Validate .goreleaser.yaml before the expensive build job runs.
+      # Catches deprecation errors, schema drift, template typos.
+      # Pinned to v2.9.0 -- the last release accepting brews: cleanly
+      # (soft-deprecated in v2.10, actively rejected in v2.16).
+      - uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: v2.9.0
+          args: check
 
   security:
     name: Pre-release Security Scan
+    needs: token-check
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+      - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version-file: go.mod
           cache: true
-
       - name: Run govulncheck
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
@@ -83,24 +135,32 @@ jobs:
     name: Release
     needs: [test, lint, security]
     runs-on: ubuntu-latest
-
+    # Known limitation: workflow_dispatch checks out the tagged ref,
+    # which means retries against tags created BEFORE this workflow
+    # was merged will use the old .goreleaser.yaml from that tag
+    # (brews.repository.token reading GITHUB_TOKEN, no use_existing_draft
+    # / replace_existing_artifacts). For such pre-fix tags, the retry
+    # path will not work; recovery is delete-and-re-tag. Tags created
+    # AFTER this workflow merges retry cleanly.
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+      - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version-file: go.mod
           cache: true
-
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         with:
           distribution: goreleaser
-          version: latest
+          version: v2.9.0
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN || secrets.GITHUB_TOKEN }}
+          # Built-in token: scoped to pbv7/pingheat. Used by GoReleaser
+          # to create the GitHub release and upload artifacts.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Scope-limited PAT: read/write Contents on pbv7/homebrew-tap
+          # only. Referenced by .goreleaser.yaml's brews.repository.token.
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
