@@ -1,6 +1,6 @@
 module github.com/pbv7/pingheat
 
-go 1.25.7
+go 1.26.4
 
 require (
 	github.com/charmbracelet/bubbletea v1.3.10
