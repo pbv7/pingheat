@@ -5,11 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 **Pingheat** is a cross-platform terminal application that visualizes network latency as a real-time scrolling heatmap.
-It optionally exports Prometheus metrics and targets Go 1.25+ on Linux, macOS, and Windows.
+It optionally exports Prometheus metrics and targets Go 1.26+ on Linux, macOS, and Windows.
 
 ## Development Dependencies
 
-**Required:** Go 1.25+, Git
+**Required:** Go 1.26+, Git
 
 **Optional:**
 
